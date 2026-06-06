@@ -200,6 +200,10 @@ npm run build
 npm start
 ```
 
+### Next.js 16 + next-pwa Compatibility
+
+This project uses Next.js 16.2.7 with next-pwa for PWA functionality. Since Next.js 16 uses Turbopack by default but next-pwa requires webpack, the `next.config.ts` includes an empty `turbopack: {}` configuration to silence the webpack/Turbopack conflict warning. This allows the build to succeed while maintaining full PWA functionality.
+
 ## PWA Installation
 
 The application supports PWA installation on mobile devices:

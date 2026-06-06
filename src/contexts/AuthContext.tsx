@@ -57,43 +57,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single()
+    console.log('USER ID:', supabaseUser.id)
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', supabaseUser.id)
+      .single()
 
-      if (error) throw error
+    console.log('PROFILE:', profile)
+    console.log('PROFILE ERROR:', error)
 
-      if (profile) {
-        setUser({
-          id: profile.id,
-          email: profile.email || supabaseUser.email || '',
-          name: profile.name,
-          role: profile.role as 'admin' | 'kasir'
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
+    if (error) throw error
+
+    if (profile) {
+      setUser({
+        id: profile.id,
+        email: profile.email || supabaseUser.email || '',
+        name: profile.name,
+        role: profile.role as 'admin' | 'kasir'
+      })
     }
   }
 
   const login = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+    console.log('EMAIL:', email)
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-      if (error) throw error
+    console.log('SIGNIN DATA:', data)
+    console.log('SIGNIN ERROR:', error)
 
-      if (data.user) {
-        await fetchUserProfile(data.user)
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      throw error
+    if (error) throw error
+
+    if (data.user) {
+      await fetchUserProfile(data.user)
     }
   }
 

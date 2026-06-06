@@ -25,7 +25,13 @@ export default function LoginPage() {
       await login(email, password)
       router.push('/dashboard')
     } catch (err) {
-      setError('Email atau password salah')
+      console.error('LOGIN PAGE ERROR:', err)
+      // Show actual error from Supabase instead of generic message
+      if (err instanceof Error) {
+        setError(`Login gagal: ${err.message}`)
+      } else {
+        setError('Login gagal: Error tidak diketahui')
+      }
     } finally {
       setLoading(false)
     }

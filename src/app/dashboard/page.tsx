@@ -12,7 +12,8 @@ import {
   ShoppingCart, 
   AlertTriangle,
   Cake,
-  Wallet
+  Wallet,
+  CreditCard
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { format } from 'date-fns'
@@ -24,6 +25,8 @@ interface DashboardStats {
   todayExpenses: number
   todayNetProfit: number
   todaySales: number
+  todayCashSales: number
+  todayTransferSales: number
   lowStock: number
   bestSellers: any[]
 }
@@ -37,6 +40,8 @@ export default function DashboardPage() {
     todayExpenses: 0,
     todayNetProfit: 0,
     todaySales: 0,
+    todayCashSales: 0,
+    todayTransferSales: 0,
     lowStock: 0,
     bestSellers: []
   })
@@ -86,6 +91,19 @@ export default function DashboardPage() {
       // Calculate profit (revenue - cost)
       const todayProfit = todayRevenue - todayCost
       console.log('TODAY PROFIT (revenue - cost):', todayProfit)
+
+      // Calculate cash and transfer sales from sales table
+      const { data: salesData } = await supabase
+        .from('sales')
+        .select('total_amount, payment_method')
+        .gte('created_at', todayStart)
+        .lt('created_at', todayEnd)
+
+      const todayCashSales = salesData?.filter(sale => sale.payment_method === 'cash').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
+      const todayTransferSales = salesData?.filter(sale => sale.payment_method === 'transfer').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
+
+      console.log('TODAY CASH SALES:', todayCashSales)
+      console.log('TODAY TRANSFER SALES:', todayTransferSales)
 
       // Get today's total quantity sold (sum of all sale_items quantities)
       const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
@@ -145,7 +163,9 @@ export default function DashboardPage() {
         todayProfit,
         todayExpenses,
         todayNetProfit,
-        todaySales: todayQuantitySold, // Changed from sales count to total quantity
+        todaySales: todayQuantitySold,
+        todayCashSales,
+        todayTransferSales,
         lowStock: lowStockCount || 0,
         bestSellers: bestSellersData || []
       })
@@ -186,11 +206,25 @@ export default function DashboardPage() {
       bgColor: 'bg-blue-50'
     },
     {
+      title: 'Penjualan Tunai Hari Ini',
+      value: `Rp ${stats.todayCashSales.toLocaleString('id-ID')}`,
+      icon: Wallet,
+      color: 'from-teal-500 to-cyan-500',
+      bgColor: 'bg-teal-50'
+    },
+    {
+      title: 'Penjualan Transfer Hari Ini',
+      value: `Rp ${stats.todayTransferSales.toLocaleString('id-ID')}`,
+      icon: CreditCard,
+      color: 'from-purple-500 to-violet-500',
+      bgColor: 'bg-purple-50'
+    },
+    {
       title: 'Produk Terjual',
       value: stats.todaySales.toString(),
       icon: ShoppingCart,
-      color: 'from-purple-500 to-violet-500',
-      bgColor: 'bg-purple-50'
+      color: 'from-pink-500 to-rose-500',
+      bgColor: 'bg-pink-50'
     },
     {
       title: 'Stok Menipis',
@@ -219,7 +253,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {statCards.map((stat) => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">

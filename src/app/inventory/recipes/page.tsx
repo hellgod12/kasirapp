@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -334,12 +335,12 @@ export default function RecipesPage() {
     <ProtectedRoute allowedRoles={['admin']}>
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <div className="p-4 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Resep Produk</h1>
-                <p className="text-gray-600 mt-1">Kelola resep produk untuk perhitungan HPP</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Resep Produk</h1>
+                <p className="text-gray-600 mt-1 text-sm md:text-base">Kelola resep produk untuk perhitungan HPP</p>
               </div>
               <Dialog open={isDialogOpen} onOpenChange={(open) => {
                 setIsDialogOpen(open)
@@ -351,7 +352,7 @@ export default function RecipesPage() {
                     Tambah Resep
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto w-full md:w-auto">
                   <DialogHeader>
                     <DialogTitle>{editingProductId ? 'Edit Resep Produk' : 'Tambah Resep Baru'}</DialogTitle>
                   </DialogHeader>
@@ -520,6 +521,7 @@ export default function RecipesPage() {
             </Card>
           </div>
         </main>
+        <MobileNavigation />
       </div>
     </ProtectedRoute>
   )

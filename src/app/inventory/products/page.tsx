@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -166,12 +167,12 @@ export default function ProductsPage() {
     <ProtectedRoute allowedRoles={['admin']}>
       <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-8">
+      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+        <div className="p-4 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Produk</h1>
-              <p className="text-gray-600 mt-1">Kelola daftar produk toko</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Produk</h1>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Kelola daftar produk toko</p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open)
@@ -183,7 +184,7 @@ export default function ProductsPage() {
                   Tambah Produk
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md w-full md:w-auto">
                 <DialogHeader>
                   <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
                 </DialogHeader>
@@ -270,7 +271,59 @@ export default function ProductsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Mobile Card Layout */}
+              <div className="md:hidden space-y-3">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="p-4 bg-white rounded-lg border border-gray-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-800">{product.name}</h4>
+                        <Badge className="capitalize mt-1">{product.category}</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Harga Jual</span>
+                        <span className="font-medium">Rp {product.price.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">HPP</span>
+                        <span className="font-medium">Rp {product.hpp.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Profit/Item</span>
+                        <span className="font-medium text-green-600">Rp {(product.price - product.hpp).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Stok</span>
+                        <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>{product.stock}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleEdit(product)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1 text-red-500" />
+                        Hapus
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
@@ -331,6 +384,7 @@ export default function ProductsPage() {
           </Card>
         </div>
       </main>
+      <MobileNavigation />
     </div>
     </ProtectedRoute>
   )

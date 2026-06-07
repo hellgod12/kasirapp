@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,10 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { Receipt, Search, Calendar, Filter, Printer, Download, Trash2, Edit2, Eye } from 'lucide-react'
+import { Receipt, Search, Calendar, Filter, Printer, Download, Trash2, Edit2, Eye, Plus, Minus } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
@@ -416,11 +418,11 @@ export default function TransactionsPage() {
     <ProtectedRoute allowedRoles={['admin', 'kasir']}>
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-800">Riwayat Transaksi</h1>
-              <p className="text-gray-600 mt-1">Lihat dan kelola seluruh transaksi</p>
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <div className="p-4 md:p-8">
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Riwayat Transaksi</h1>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Lihat dan kelola seluruh transaksi</p>
             </div>
 
             {/* Filters */}
@@ -508,7 +510,18 @@ export default function TransactionsPage() {
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="text-center py-8 text-gray-500">Memuat data...</div>
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                        <Skeleton className="h-5 w-1/3 mb-2" />
+                        <Skeleton className="h-4 w-1/4 mb-3" />
+                        <div className="flex justify-between">
+                          <Skeleton className="h-4 w-1/4" />
+                          <Skeleton className="h-4 w-1/4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : paginatedSales.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">Tidak ada transaksi ditemukan</div>
                 ) : (
@@ -584,11 +597,12 @@ export default function TransactionsPage() {
             </Card>
           </div>
         </main>
+        <MobileNavigation />
       </div>
 
       {/* Transaction Detail Modal */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-full md:w-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="w-5 h-5 text-orange-500" />
@@ -628,7 +642,35 @@ export default function TransactionsPage() {
               {/* Products Table */}
               <div>
                 <h3 className="font-semibold text-gray-800 mb-3">Daftar Produk</h3>
-                <div className="border rounded-lg overflow-hidden">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-3">
+                  {saleItems.map((item) => (
+                    <div key={item.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">{item.products?.name || 'Unknown'}</p>
+                          <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Harga</span>
+                          <span className="font-medium">Rp {item.price.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Modal</span>
+                          <span className="font-medium">Rp {item.cost.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-gray-700">Subtotal</span>
+                          <span className="text-orange-600">Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block border rounded-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
@@ -720,7 +762,7 @@ export default function TransactionsPage() {
 
       {/* Void Confirmation Dialog */}
       <Dialog open={isVoidDialogOpen} onOpenChange={setIsVoidDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-full md:w-auto">
           <DialogHeader>
             <DialogTitle>Konfirmasi Void Transaksi</DialogTitle>
           </DialogHeader>
@@ -768,7 +810,7 @@ export default function TransactionsPage() {
 
       {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-full md:w-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit2 className="w-5 h-5 text-orange-500" />
@@ -794,7 +836,53 @@ export default function TransactionsPage() {
             <div>
               <h3 className="font-semibold text-gray-800 mb-3">Edit Produk</h3>
               <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-3 p-4">
+                  {editingSaleItems.map((item) => (
+                    <div key={item.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">{item.products.name}</p>
+                          <p className="text-sm text-gray-500">Rp {item.price.toLocaleString('id-ID')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newItems = editingSaleItems.map(i =>
+                                i.id === item.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i
+                              )
+                              setEditingSaleItems(newItems)
+                            }}
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newItems = editingSaleItems.map(i =>
+                                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                              )
+                              setEditingSaleItems(newItems)
+                            }}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <span className="font-bold text-orange-600">
+                          Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop Table Layout */}
+                <table className="hidden md:table w-full">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Produk</th>

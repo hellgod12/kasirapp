@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useStore } from '@/store/useStore'
 import { supabase } from '@/lib/supabase'
 import { Plus, Minus, Trash2, ShoppingBag, Cake, Coffee, Cookie } from 'lucide-react'
@@ -260,32 +261,52 @@ export default function POSPage() {
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                {filteredProducts.map((product) => {
-                  const Icon = categoryIcons[product.category]
-                  return (
-                    <Card
-                      key={product.id}
-                      className="cursor-pointer hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      <div className={`h-32 bg-gradient-to-br ${categoryColors[product.category]} flex items-center justify-center`}>
-                        <Icon className="w-16 h-16 text-white opacity-80" />
-                      </div>
+                {loading ? (
+                  [...Array(8)].map((_, i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <Skeleton className="h-32 w-full" />
                       <CardContent className="p-4">
-                        <h3 className="font-semibold text-gray-800 mb-1 truncate">{product.name}</h3>
-                        <p className="text-sm text-gray-500 capitalize mb-2">{product.category}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-orange-600">
-                            Rp {product.price.toLocaleString('id-ID')}
-                          </span>
-                          <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>
-                            Stok: {product.stock}
-                          </Badge>
+                        <Skeleton className="h-5 w-3/4 mb-2" />
+                        <Skeleton className="h-4 w-1/2 mb-2" />
+                        <div className="flex justify-between">
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-4 w-1/4" />
                         </div>
                       </CardContent>
                     </Card>
-                  )
-                })}
+                  ))
+                ) : filteredProducts.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-gray-500">
+                    Tidak ada produk ditemukan
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => {
+                    const Icon = categoryIcons[product.category]
+                    return (
+                      <Card
+                        key={product.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        <div className={`h-32 bg-gradient-to-br ${categoryColors[product.category]} flex items-center justify-center`}>
+                          <Icon className="w-16 h-16 text-white opacity-80" />
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold text-gray-800 mb-1 truncate">{product.name}</h3>
+                          <p className="text-sm text-gray-500 capitalize mb-2">{product.category}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-orange-600">
+                              Rp {product.price.toLocaleString('id-ID')}
+                            </span>
+                            <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>
+                              Stok: {product.stock}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })
+                )}
               </div>
             </div>
 

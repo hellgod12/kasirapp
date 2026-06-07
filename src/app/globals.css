@@ -147,3 +147,58 @@
     padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
   }
 }
+
+/* Mobile viewport height fix for virtual keyboard */
+@supports (-webkit-touch-callout: none) {
+  html {
+    height: -webkit-fill-available;
+  }
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Prevent zoom on input focus on iOS */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Improve touch targets and spacing for mobile */
+@media (max-width: 768px) {
+  /* Minimum touch target size for mobile */
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve spacing for mobile */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for cards on mobile */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Better button spacing */
+  button {
+    padding: 0.75rem 1.5rem;
+  }
+  
+  /* Improve form input spacing */
+  input,
+  select,
+  textarea {
+    padding: 0.75rem;
+  }
+}

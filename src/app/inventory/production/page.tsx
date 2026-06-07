@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -147,11 +148,11 @@ export default function ProductionPage() {
     <ProtectedRoute allowedRoles={['admin']}>
       <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Produksi Harian</h1>
-            <p className="text-gray-600 mt-1">Catat produksi harian produk</p>
+      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+        <div className="p-4 md:p-8">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Produksi Harian</h1>
+            <p className="text-gray-600 mt-1 text-sm md:text-base">Catat produksi harian produk</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -263,6 +264,7 @@ export default function ProductionPage() {
           </div>
         </div>
       </main>
+      <MobileNavigation />
     </div>
     </ProtectedRoute>
   )

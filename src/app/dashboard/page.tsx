@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Cake,
   Wallet,
-  CreditCard
+  CreditCard,
+  Package
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { format } from 'date-fns'
@@ -21,6 +22,7 @@ import { id } from 'date-fns/locale'
 
 interface DashboardStats {
   todayRevenue: number
+  todayHPP: number
   todayProfit: number
   todayExpenses: number
   todayNetProfit: number
@@ -36,6 +38,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats>({
     todayRevenue: 0,
+    todayHPP: 0,
     todayProfit: 0,
     todayExpenses: 0,
     todayNetProfit: 0,
@@ -160,6 +163,7 @@ export default function DashboardPage() {
 
       setStats({
         todayRevenue,
+        todayHPP: todayCost,
         todayProfit,
         todayExpenses,
         todayNetProfit,
@@ -183,6 +187,13 @@ export default function DashboardPage() {
       icon: DollarSign,
       color: 'from-orange-500 to-red-500',
       bgColor: 'bg-orange-50'
+    },
+    {
+      title: 'HPP Hari Ini',
+      value: `Rp ${stats.todayHPP.toLocaleString('id-ID')}`,
+      icon: Package,
+      color: 'from-amber-500 to-yellow-500',
+      bgColor: 'bg-amber-50'
     },
     {
       title: 'Laba Kotor Hari Ini',

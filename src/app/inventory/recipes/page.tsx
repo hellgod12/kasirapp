@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit, Trash2, BookOpen, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, BookOpen, Search, Minus } from 'lucide-react'
 
 interface ProductRecipe {
   id: string
@@ -35,20 +35,30 @@ interface RawMaterial {
   cost_per_unit: number
 }
 
+interface RecipeIngredient {
+  raw_material_id: string
+  quantity_used: string
+}
+
+interface ProductWithRecipes {
+  id: string
+  name: string
+  recipes: ProductRecipe[]
+}
+
 export default function RecipesPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [recipes, setRecipes] = useState<ProductRecipe[]>([])
+  const [productsWithRecipes, setProductsWithRecipes] = useState<ProductWithRecipes[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingRecipe, setEditingRecipe] = useState<ProductRecipe | null>(null)
-  const [formData, setFormData] = useState({
-    product_id: '',
-    raw_material_id: '',
-    quantity_used: ''
-  })
+  const [editingProductId, setEditingProductId] = useState<string | null>(null)
+  const [selectedProductId, setSelectedProductId] = useState('')
+  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
+    { raw_material_id: '', quantity_used: '' }
+  ])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -58,23 +68,30 @@ export default function RecipesPage() {
 
   useEffect(() => {
     if (user) {
-      fetchRecipes()
+      fetchProductsWithRecipes()
       fetchProducts()
       fetchRawMaterials()
     }
   }, [user])
 
-  const fetchRecipes = async () => {
+  const fetchProductsWithRecipes = async () => {
     try {
       const { data, error } = await supabase
-        .from('product_recipes')
-        .select('*, products!inner(name), raw_materials!inner(name, unit, cost_per_unit)')
-        .order('created_at', { ascending: false })
+        .from('products')
+        .select('id, name, product_recipes(*, raw_materials(name, unit, cost_per_unit))')
+        .eq('is_active', true)
+        .order('name')
       
       if (error) throw error
-      setRecipes(data || [])
+      // Transform product_recipes to recipes
+      const transformedData = (data || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        recipes: (product as any).product_recipes || []
+      }))
+      setProductsWithRecipes(transformedData)
     } catch (error) {
-      console.error('Error fetching recipes:', error)
+      console.error('Error fetching products with recipes:', error)
     }
   }
 
@@ -107,36 +124,62 @@ export default function RecipesPage() {
     }
   }
 
+  const addIngredient = () => {
+    setIngredients([...ingredients, { raw_material_id: '', quantity_used: '' }])
+  }
+
+  const removeIngredient = (index: number) => {
+    if (ingredients.length > 1) {
+      setIngredients(ingredients.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateIngredient = (index: number, field: keyof RecipeIngredient, value: string) => {
+    const newIngredients = [...ingredients]
+    newIngredients[index][field] = value
+    setIngredients(newIngredients)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!selectedProductId) {
+      alert('Pilih produk terlebih dahulu')
+      return
+    }
+
     try {
-      const recipeData = {
-        product_id: formData.product_id,
-        raw_material_id: formData.raw_material_id,
-        quantity_used: parseFloat(formData.quantity_used)
+      // Validate ingredients
+      const validIngredients = ingredients.filter(ing => ing.raw_material_id && ing.quantity_used)
+      if (validIngredients.length === 0) {
+        alert('Tambahkan minimal satu bahan baku')
+        return
       }
 
-      if (editingRecipe) {
-        const { error } = await supabase
-          .from('product_recipes')
-          .update(recipeData)
-          .eq('id', editingRecipe.id)
-        
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('product_recipes')
-          .insert(recipeData)
-        
-        if (error) throw error
-      }
+      // Delete existing recipes for this product
+      await supabase
+        .from('product_recipes')
+        .delete()
+        .eq('product_id', selectedProductId)
+
+      // Insert all new recipes
+      const recipesToInsert = validIngredients.map(ing => ({
+        product_id: selectedProductId,
+        raw_material_id: ing.raw_material_id,
+        quantity_used: parseFloat(ing.quantity_used)
+      }))
+
+      const { error } = await supabase
+        .from('product_recipes')
+        .insert(recipesToInsert)
+
+      if (error) throw error
 
       // Update product HPP
-      await updateProductHPP(formData.product_id)
+      await updateProductHPP(selectedProductId)
 
       setIsDialogOpen(false)
       resetForm()
-      fetchRecipes()
+      fetchProductsWithRecipes()
     } catch (error) {
       console.error('Error saving recipe:', error)
       alert('Terjadi kesalahan saat menyimpan resep')
@@ -145,14 +188,12 @@ export default function RecipesPage() {
 
   const updateProductHPP = async (productId: string) => {
     try {
-      // Call the database function to calculate HPP
-      const { error } = await supabase.rpc('calculate_product_hpp', { product_uuid: productId })
-      if (error) throw error
+      const hpp = await supabase.rpc('calculate_product_hpp', { product_uuid: productId })
+      if (hpp.error) throw hpp.error
 
-      // Update the product's HPP
       const { error: updateError } = await supabase
         .from('products')
-        .update({ hpp: (await supabase.rpc('calculate_product_hpp', { product_uuid: productId })) })
+        .update({ hpp: hpp.data })
         .eq('id', productId)
 
       if (updateError) throw updateError
@@ -161,52 +202,63 @@ export default function RecipesPage() {
     }
   }
 
-  const handleEdit = (recipe: ProductRecipe) => {
-    setEditingRecipe(recipe)
-    setFormData({
-      product_id: recipe.product_id,
+  const handleEdit = (product: ProductWithRecipes) => {
+    setEditingProductId(product.id)
+    setSelectedProductId(product.id)
+    
+    // Load existing ingredients
+    const existingIngredients = product.recipes.map(recipe => ({
       raw_material_id: recipe.raw_material_id,
       quantity_used: recipe.quantity_used.toString()
-    })
+    }))
+    
+    setIngredients(existingIngredients.length > 0 ? existingIngredients : [{ raw_material_id: '', quantity_used: '' }])
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: string, productId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus resep ini?')) return
+  const handleDelete = async (productId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus semua resep untuk produk ini?')) return
     
     try {
       const { error } = await supabase
         .from('product_recipes')
         .delete()
-        .eq('id', id)
+        .eq('product_id', productId)
       
       if (error) throw error
       
-      // Update product HPP after deletion
-      await updateProductHPP(productId)
+      // Update product HPP to 0
+      await supabase
+        .from('products')
+        .update({ hpp: 0 })
+        .eq('id', productId)
       
-      fetchRecipes()
+      fetchProductsWithRecipes()
     } catch (error) {
-      console.error('Error deleting recipe:', error)
+      console.error('Error deleting recipes:', error)
       alert('Terjadi kesalahan saat menghapus resep')
     }
   }
 
   const resetForm = () => {
-    setFormData({
-      product_id: '',
-      raw_material_id: '',
-      quantity_used: ''
-    })
-    setEditingRecipe(null)
+    setSelectedProductId('')
+    setEditingProductId(null)
+    setIngredients([{ raw_material_id: '', quantity_used: '' }])
   }
 
-  const filteredRecipes = recipes.filter(recipe => {
-    const productName = (recipe as any).products?.name || ''
-    const materialName = (recipe as any).raw_materials?.name || ''
-    const searchLower = searchQuery.toLowerCase()
-    return productName.toLowerCase().includes(searchLower) || materialName.toLowerCase().includes(searchLower)
+  const filteredProducts = productsWithRecipes.filter(product => {
+    return product.name.toLowerCase().includes(searchQuery.toLowerCase())
   })
+
+  const calculateProductHPP = (recipes: ProductRecipe[]) => {
+    return recipes.reduce((total, recipe) => {
+      const material = recipe.raw_materials
+      if (material) {
+        return total + (recipe.quantity_used * material.cost_per_unit)
+      }
+      return total
+    }, 0)
+  }
 
   if (loading || !user) {
     return null
@@ -233,14 +285,14 @@ export default function RecipesPage() {
                     Tambah Resep
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>{editingRecipe ? 'Edit Resep' : 'Tambah Resep Baru'}</DialogTitle>
+                    <DialogTitle>{editingProductId ? 'Edit Resep Produk' : 'Tambah Resep Baru'}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700">Produk</label>
-                      <Select value={formData.product_id || ''} onValueChange={(value) => setFormData({ ...formData, product_id: value || '' })}>
+                      <Select value={selectedProductId || ''} onValueChange={(value) => setSelectedProductId(value || '')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih produk" />
                         </SelectTrigger>
@@ -251,30 +303,60 @@ export default function RecipesPage() {
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Bahan Baku</label>
-                      <Select value={formData.raw_material_id || ''} onValueChange={(value) => setFormData({ ...formData, raw_material_id: value || '' })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih bahan baku" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {rawMaterials.map((material) => (
-                            <SelectItem key={material.id} value={material.id}>{material.name} ({material.unit})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-gray-700">Bahan Baku</label>
+                        <Button type="button" variant="outline" size="sm" onClick={addIngredient}>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Tambah Bahan
+                        </Button>
+                      </div>
+                      
+                      {ingredients.map((ingredient, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <div className="flex-1">
+                            <Select
+                              value={ingredient.raw_material_id || ''}
+                              onValueChange={(value) => updateIngredient(index, 'raw_material_id', value || '')}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih bahan baku" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {rawMaterials.map((material) => (
+                                  <SelectItem key={material.id} value={material.id}>
+                                    {material.name} ({material.unit})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="w-32">
+                            <Input
+                              type="number"
+                              placeholder="Jumlah"
+                              value={ingredient.quantity_used}
+                              onChange={(e) => updateIngredient(index, 'quantity_used', e.target.value)}
+                              required
+                            />
+                          </div>
+                          {ingredients.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeIngredient(index)}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Jumlah Digunakan</label>
-                      <Input
-                        type="number"
-                        value={formData.quantity_used}
-                        onChange={(e) => setFormData({ ...formData, quantity_used: e.target.value })}
-                        required
-                      />
-                    </div>
+
                     <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500">
-                      {editingRecipe ? 'Update' : 'Simpan'}
+                      {editingProductId ? 'Update Resep' : 'Simpan Resep'}
                     </Button>
                   </form>
                 </DialogContent>
@@ -287,7 +369,7 @@ export default function RecipesPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                      placeholder="Cari resep..."
+                      placeholder="Cari produk..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -296,56 +378,77 @@ export default function RecipesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Produk</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Bahan Baku</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Jumlah</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Biaya</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRecipes.map((recipe) => {
-                        const material = (recipe as any).raw_materials
-                        const cost = material ? recipe.quantity_used * material.cost_per_unit : 0
-                        return (
-                          <tr key={recipe.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium text-gray-800">
-                              {(recipe as any).products?.name || 'Unknown'}
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {material?.name || 'Unknown'} ({material?.unit || ''})
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">{recipe.quantity_used}</td>
-                            <td className="py-3 px-4 text-gray-600">
-                              Rp {cost.toLocaleString('id-ID')}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEdit(recipe)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(recipe.id, recipe.product_id)}
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                <div className="space-y-4">
+                  {filteredProducts.map((product) => {
+                    const hpp = calculateProductHPP(product.recipes || [])
+                    return (
+                      <Card key={product.id} className="border">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">{product.name}</CardTitle>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(product)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(product.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {product.recipes && product.recipes.length > 0 ? (
+                            <>
+                              <div className="mb-3">
+                                <span className="text-sm font-medium text-gray-700">Total HPP: </span>
+                                <span className="text-sm font-bold text-gray-900">
+                                  Rp {hpp.toLocaleString('id-ID')}
+                                </span>
                               </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="border-b border-gray-200">
+                                      <th className="text-left py-2 px-2 font-semibold text-gray-700">Bahan Baku</th>
+                                      <th className="text-left py-2 px-2 font-semibold text-gray-700">Jumlah</th>
+                                      <th className="text-left py-2 px-2 font-semibold text-gray-700">Biaya</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {product.recipes.map((recipe) => {
+                                      const material = recipe.raw_materials
+                                      const cost = material ? recipe.quantity_used * material.cost_per_unit : 0
+                                      return (
+                                        <tr key={recipe.id} className="border-b border-gray-100">
+                                          <td className="py-2 px-2 text-gray-600">
+                                            {material?.name || 'Unknown'} ({material?.unit || ''})
+                                          </td>
+                                          <td className="py-2 px-2 text-gray-600">{recipe.quantity_used}</td>
+                                          <td className="py-2 px-2 text-gray-600">
+                                            Rp {cost.toLocaleString('id-ID')}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">Belum ada resep</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>

@@ -110,8 +110,13 @@ export default function POSPage() {
     setIsProcessing(true)
     try {
       const totalAmount = getCartTotal()
-      const totalCost = cart.reduce((sum, item) => sum + (item.cost * item.quantity), 0)
+      const totalCost = cart.reduce((sum, item) => sum + ((item.hpp || item.cost) * item.quantity), 0)
       const profit = totalAmount - totalCost
+
+      console.log('CHECKOUT CALCULATIONS:')
+      console.log('totalAmount:', totalAmount)
+      console.log('totalCost:', totalCost)
+      console.log('profit:', profit)
 
       // Create sale
       const { data: sale, error: saleError } = await supabase

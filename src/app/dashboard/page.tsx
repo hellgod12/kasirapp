@@ -66,30 +66,29 @@ export default function DashboardPage() {
 
       console.log('DASHBOARD DATE RANGE:', { todayStart, todayEnd })
 
-      // Get today's sales
-      const { data: salesData } = await supabase
-        .from('sales')
-        .select('total_amount, profit')
-        .gte('created_at', todayStart)
-        .lt('created_at', todayEnd)
-
-      const todayRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
-      const todayProfit = salesData?.reduce((sum, sale) => sum + Number(sale.profit), 0) || 0
-
-      console.log('TODAY SALES DATA:', salesData)
-      console.log('TODAY REVENUE:', todayRevenue)
-      console.log('TODAY PROFIT:', todayProfit)
-
-      // Get today's total quantity sold (sum of all sale_items quantities)
+      // Get today's sale items for accurate profit calculation
       const { data: saleItemsData } = await supabase
         .from('sale_items')
-        .select('quantity')
+        .select('subtotal, cost, quantity')
         .gte('created_at', todayStart)
         .lt('created_at', todayEnd)
 
-      const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
-
       console.log('TODAY SALE ITEMS DATA:', saleItemsData)
+
+      // Calculate revenue from sale_items (sum of subtotals)
+      const todayRevenue = saleItemsData?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
+      console.log('TODAY REVENUE (from sale_items subtotal):', todayRevenue)
+
+      // Calculate cost from sale_items (sum of cost * quantity)
+      const todayCost = saleItemsData?.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0) || 0
+      console.log('TODAY COST (from sale_items cost * quantity):', todayCost)
+
+      // Calculate profit (revenue - cost)
+      const todayProfit = todayRevenue - todayCost
+      console.log('TODAY PROFIT (revenue - cost):', todayProfit)
+
+      // Get today's total quantity sold (sum of all sale_items quantities)
+      const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
       console.log('TODAY QUANTITY SOLD:', todayQuantitySold)
 
       // Get low stock products (stock < 10)

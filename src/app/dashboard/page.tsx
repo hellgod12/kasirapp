@@ -11,7 +11,8 @@ import {
   TrendingUp, 
   ShoppingCart, 
   AlertTriangle,
-  Cake
+  Cake,
+  Wallet
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { format } from 'date-fns'
@@ -20,6 +21,8 @@ import { id } from 'date-fns/locale'
 interface DashboardStats {
   todayRevenue: number
   todayProfit: number
+  todayExpenses: number
+  todayNetProfit: number
   todaySales: number
   lowStock: number
   bestSellers: any[]
@@ -31,6 +34,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     todayRevenue: 0,
     todayProfit: 0,
+    todayExpenses: 0,
+    todayNetProfit: 0,
     todaySales: 0,
     lowStock: 0,
     bestSellers: []
@@ -104,9 +109,24 @@ export default function DashboardPage() {
 
       console.log('TODAY BEST SELLERS:', bestSellersData)
 
+      // Get today's expenses
+      const { data: expensesData } = await supabase
+        .from('expenses')
+        .select('amount')
+        .gte('expense_date', todayUTC.toISOString().split('T')[0])
+        .lte('expense_date', tomorrowUTC.toISOString().split('T')[0])
+
+      const todayExpenses = expensesData?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0
+      const todayNetProfit = todayProfit - todayExpenses
+
+      console.log('TODAY EXPENSES:', todayExpenses)
+      console.log('TODAY NET PROFIT:', todayNetProfit)
+
       setStats({
         todayRevenue,
         todayProfit,
+        todayExpenses,
+        todayNetProfit,
         todaySales: todayQuantitySold, // Changed from sales count to total quantity
         lowStock: lowStockCount || 0,
         bestSellers: bestSellersData || []
@@ -127,18 +147,32 @@ export default function DashboardPage() {
       bgColor: 'bg-orange-50'
     },
     {
-      title: 'Laba Hari Ini',
+      title: 'Laba Kotor Hari Ini',
       value: `Rp ${stats.todayProfit.toLocaleString('id-ID')}`,
       icon: TrendingUp,
       color: 'from-green-500 to-emerald-500',
       bgColor: 'bg-green-50'
     },
     {
+      title: 'Pengeluaran Hari Ini',
+      value: `Rp ${stats.todayExpenses.toLocaleString('id-ID')}`,
+      icon: Wallet,
+      color: 'from-red-500 to-pink-500',
+      bgColor: 'bg-red-50'
+    },
+    {
+      title: 'Laba Bersih Hari Ini',
+      value: `Rp ${stats.todayNetProfit.toLocaleString('id-ID')}`,
+      icon: TrendingUp,
+      color: 'from-blue-500 to-indigo-500',
+      bgColor: 'bg-blue-50'
+    },
+    {
       title: 'Produk Terjual',
       value: stats.todaySales.toString(),
       icon: ShoppingCart,
-      color: 'from-blue-500 to-indigo-500',
-      bgColor: 'bg-blue-50'
+      color: 'from-purple-500 to-violet-500',
+      bgColor: 'bg-purple-50'
     },
     {
       title: 'Stok Menipis',
@@ -167,7 +201,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {statCards.map((stat) => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">

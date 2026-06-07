@@ -10,7 +10,8 @@ import {
   BarChart3, 
   LogOut,
   Cake,
-  Store
+  Store,
+  Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Produksi Harian', href: '/inventory/production', icon: Cake, roles: ['admin'] },
   { name: 'Barang Rusak', href: '/inventory/waste', icon: Package, roles: ['admin'] },
   { name: 'Riwayat Stok', href: '/inventory/history', icon: BarChart3, roles: ['admin'] },
+  { name: 'Keuangan', href: '/finance/expenses', icon: Wallet, roles: ['admin'] },
   { name: 'Laporan', href: '/reports', icon: BarChart3, roles: ['admin'] },
 ]
 

@@ -28,6 +28,10 @@ interface Sale {
   payment_method: 'cash' | 'transfer'
   created_by: string
   payment_reference?: string
+  profiles?: {
+    name: string
+    role: string
+  }
 }
 
 interface SaleItem {
@@ -103,7 +107,7 @@ export default function TransactionsPage() {
 
       let query = supabase
         .from('sales')
-        .select('*')
+        .select('*, profiles(name, role)')
         .order('created_at', { ascending: false })
 
       if (dateFilter !== 'all' && startDate && endDate) {
@@ -298,8 +302,9 @@ export default function TransactionsPage() {
     doc.setFontSize(10)
     doc.text(`Invoice: INV-${selectedSale.id.slice(0, 8).toUpperCase()}`, 20, 50)
     doc.text(`Tanggal: ${format(new Date(selectedSale.created_at), 'dd MMM yyyy, HH:mm', { locale: id })}`, 20, 58)
-    doc.text(`Kasir ID: ${selectedSale.created_by}`, 20, 66)
-    doc.text(`Metode: ${selectedSale.payment_method === 'cash' ? 'Tunai' : 'Transfer'}`, 20, 74)
+    doc.text(`Kasir: ${selectedSale.profiles?.name || 'Unknown User'}`, 20, 66)
+    doc.text(`Role: ${selectedSale.profiles?.role || 'Unknown'}`, 20, 74)
+    doc.text(`Metode: ${selectedSale.payment_method === 'cash' ? 'Tunai' : 'Transfer'}`, 20, 82)
     
     // Products table
     const tableData = saleItems.map((item) => [
@@ -337,7 +342,8 @@ export default function TransactionsPage() {
       ['Informasi Transaksi'],
       ['Invoice', `INV-${selectedSale.id.slice(0, 8).toUpperCase()}`],
       ['Tanggal', format(new Date(selectedSale.created_at), 'dd MMM yyyy, HH:mm', { locale: id })],
-      ['Kasir ID', selectedSale.created_by],
+      ['Kasir', selectedSale.profiles?.name || 'Unknown User'],
+      ['Role', selectedSale.profiles?.role || 'Unknown'],
       ['Metode Pembayaran', selectedSale.payment_method === 'cash' ? 'Tunai' : 'Transfer'],
       [''],
       ['Ringkasan'],
@@ -365,7 +371,7 @@ export default function TransactionsPage() {
   // Filter sales by search query
   const filteredSales = sales.filter(sale => {
     const invoice = `INV-${sale.id.slice(0, 8).toUpperCase()}`
-    const cashier = sale.created_by || ''
+    const cashier = sale.profiles?.name || 'Unknown User'
     const query = searchQuery.toLowerCase()
     return invoice.toLowerCase().includes(query) || cashier.toLowerCase().includes(query)
   })
@@ -500,7 +506,10 @@ export default function TransactionsPage() {
                               {format(new Date(sale.created_at), 'dd MMM yyyy, HH:mm', { locale: id })}
                             </p>
                             <p className="text-xs text-gray-400">
-                              Kasir ID: {sale.created_by}
+                              Kasir: {sale.profiles?.name || 'Unknown User'}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Role: {sale.profiles?.role || 'Unknown'}
                             </p>
                           </div>
                         </div>
@@ -576,8 +585,12 @@ export default function TransactionsPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Kasir ID</p>
-                  <p className="font-semibold">{selectedSale.created_by}</p>
+                  <p className="text-sm text-gray-500">Kasir</p>
+                  <p className="font-semibold">{selectedSale.profiles?.name || 'Unknown User'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Role</p>
+                  <p className="font-semibold">{selectedSale.profiles?.role || 'Unknown'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Metode Pembayaran</p>

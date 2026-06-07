@@ -23,6 +23,7 @@ interface Product {
   cost: number
   stock: number
   image_url: string | null
+  is_active: boolean
 }
 
 const categoryIcons = {
@@ -64,6 +65,7 @@ export default function POSPage() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('is_active', true)
         .order('name')
       
       if (error) throw error

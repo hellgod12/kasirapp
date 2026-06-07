@@ -22,6 +22,7 @@ interface Product {
   cost: number
   stock: number
   image_url: string | null
+  is_active: boolean
 }
 
 export default function ProductsPage() {
@@ -57,6 +58,7 @@ export default function ProductsPage() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('is_active', true)
         .order('name')
       
       if (error) throw error
@@ -114,19 +116,27 @@ export default function ProductsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return
+    if (!confirm('Apakah Anda yakin ingin menghapus produk ini? Produk akan disembunyikan dari POS dan daftar produk, tetapi data penjualan historis akan tetap tersimpan.')) return
     
     try {
+      console.log('SOFT DELETE PRODUCT ID:', id)
+      
+      // Soft delete: set is_active to false instead of hard delete
       const { error } = await supabase
         .from('products')
-        .delete()
+        .update({ is_active: false })
         .eq('id', id)
       
-      if (error) throw error
+      if (error) {
+        console.error('SOFT DELETE ERROR:', error)
+        throw error
+      }
+      
+      console.log('SOFT DELETE SUCCESS')
       fetchProducts()
     } catch (error) {
       console.error('Error deleting product:', error)
-      alert('Terjadi kesalahan saat menghapus produk')
+      alert(`Terjadi kesalahan saat menghapus produk: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

@@ -38,7 +38,7 @@ export function Sidebar() {
   const { user, logout } = useAuth()
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gradient-to-b from-orange-50 to-white border-r border-orange-100">
+    <div className="hidden md:flex h-full w-64 flex-col bg-gradient-to-b from-orange-50 to-white border-r border-orange-100">
       <div className="flex h-16 items-center justify-center border-b border-orange-100">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">

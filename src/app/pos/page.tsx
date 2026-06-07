@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -188,10 +189,10 @@ export default function POSPage() {
     <ProtectedRoute allowedRoles={['admin', 'kasir']}>
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="flex h-full">
-            {/* Left Panel - Categories */}
-            <div className="w-64 bg-white border-r border-gray-200 p-4">
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <div className="flex flex-col md:flex-row h-full">
+            {/* Left Panel - Categories - Hidden on mobile */}
+            <div className="hidden md:block w-64 bg-white border-r border-gray-200 p-4">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Kategori</h2>
               <div className="space-y-2">
                 <Button
@@ -219,8 +220,36 @@ export default function POSPage() {
             </div>
 
             {/* Middle Panel - Products */}
-            <div className="flex-1 p-6">
-              <div className="mb-6">
+            <div className="flex-1 p-4 md:p-6">
+              {/* Mobile Category Tabs */}
+              <div className="md:hidden mb-4 overflow-x-auto pb-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory('all')}
+                  >
+                    Semua
+                  </Button>
+                  {['bakery', 'cemilan', 'minuman'].map((category) => {
+                    const Icon = categoryIcons[category as keyof typeof categoryIcons]
+                    return (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? 'default' : 'outline'}
+                        size="sm"
+                        className="capitalize whitespace-nowrap"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        <Icon className="w-4 h-4 mr-1" />
+                        {category}
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-4 md:mb-6">
                 <input
                   type="text"
                   placeholder="Cari produk..."
@@ -230,7 +259,7 @@ export default function POSPage() {
                 />
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {filteredProducts.map((product) => {
                   const Icon = categoryIcons[product.category]
                   return (
@@ -261,7 +290,7 @@ export default function POSPage() {
             </div>
 
             {/* Right Panel - Cart */}
-            <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
+            <div className="w-full md:w-96 bg-white border-l border-gray-200 flex flex-col">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-orange-500" />
@@ -359,6 +388,7 @@ export default function POSPage() {
             </div>
           </div>
         </main>
+        <MobileNavigation />
       </div>
     </ProtectedRoute>
   )

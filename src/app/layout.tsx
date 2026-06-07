@@ -13,11 +13,21 @@ export const metadata: Metadata = {
   description: "Professional POS and Inventory Management for Kenaya Yummy Bakery",
   manifest: "/manifest.json",
   themeColor: "#f97316",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Kenaya Yummy",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
   },
 };
 

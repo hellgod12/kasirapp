@@ -124,8 +124,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Safe area support for iPhone notch */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   html {
     @apply font-sans;
+    /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
+  }
+  /* Prevent horizontal scrolling on all elements */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* Safe area bottom for mobile navigation */
+  .safe-area-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
   }
 }

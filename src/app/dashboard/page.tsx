@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNavigation } from '@/components/MobileNavigation'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
@@ -267,17 +268,17 @@ export default function DashboardPage() {
     <ProtectedRoute allowedRoles={['admin', 'kasir']}>
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-              <p className="text-gray-600 mt-1">
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <div className="p-4 md:p-8">
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Dashboard</h1>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">
                 Selamat datang kembali, {user!.name}!
               </p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
               {statCards.map((stat) => (
                 <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -336,6 +337,7 @@ export default function DashboardPage() {
             </Card>
           </div>
         </main>
+        <MobileNavigation />
       </div>
     </ProtectedRoute>
   )

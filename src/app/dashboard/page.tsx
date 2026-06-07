@@ -14,7 +14,8 @@ import {
   Cake,
   Wallet,
   CreditCard,
-  Package
+  Package,
+  Receipt
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { format } from 'date-fns'
@@ -29,6 +30,7 @@ interface DashboardStats {
   todaySales: number
   todayCashSales: number
   todayTransferSales: number
+  todayTransactionCount: number
   lowStock: number
   bestSellers: any[]
 }
@@ -45,6 +47,7 @@ export default function DashboardPage() {
     todaySales: 0,
     todayCashSales: 0,
     todayTransferSales: 0,
+    todayTransactionCount: 0,
     lowStock: 0,
     bestSellers: []
   })
@@ -104,9 +107,11 @@ export default function DashboardPage() {
 
       const todayCashSales = salesData?.filter(sale => sale.payment_method === 'cash').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
       const todayTransferSales = salesData?.filter(sale => sale.payment_method === 'transfer').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
+      const todayTransactionCount = salesData?.length || 0
 
       console.log('TODAY CASH SALES:', todayCashSales)
       console.log('TODAY TRANSFER SALES:', todayTransferSales)
+      console.log('TODAY TRANSACTION COUNT:', todayTransactionCount)
 
       // Get today's total quantity sold (sum of all sale_items quantities)
       const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
@@ -170,6 +175,7 @@ export default function DashboardPage() {
         todaySales: todayQuantitySold,
         todayCashSales,
         todayTransferSales,
+        todayTransactionCount,
         lowStock: lowStockCount || 0,
         bestSellers: bestSellersData || []
       })
@@ -229,6 +235,13 @@ export default function DashboardPage() {
       icon: CreditCard,
       color: 'from-purple-500 to-violet-500',
       bgColor: 'bg-purple-50'
+    },
+    {
+      title: 'Jumlah Transaksi Hari Ini',
+      value: stats.todayTransactionCount.toString(),
+      icon: Receipt,
+      color: 'from-indigo-500 to-blue-500',
+      bgColor: 'bg-indigo-50'
     },
     {
       title: 'Produk Terjual',

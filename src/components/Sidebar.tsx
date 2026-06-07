@@ -11,7 +11,9 @@ import {
   LogOut,
   Cake,
   Store,
-  Wallet
+  Wallet,
+  Wheat,
+  BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +21,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
   { name: 'Kasir (POS)', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
   { name: 'Produk', href: '/inventory/products', icon: Package, roles: ['admin'] },
+  { name: 'Bahan Baku', href: '/inventory/raw-materials', icon: Wheat, roles: ['admin'] },
+  { name: 'Resep Produk', href: '/inventory/recipes', icon: BookOpen, roles: ['admin'] },
   { name: 'Stok Masuk', href: '/inventory/stock-in', icon: Package, roles: ['admin'] },
   { name: 'Produksi Harian', href: '/inventory/production', icon: Cake, roles: ['admin'] },
   { name: 'Barang Rusak', href: '/inventory/waste', icon: Package, roles: ['admin'] },

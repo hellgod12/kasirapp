@@ -21,6 +21,7 @@ interface Product {
   category: 'bakery' | 'cemilan' | 'minuman'
   price: number
   cost: number
+  hpp: number
   stock: number
   image_url: string | null
   is_active: boolean
@@ -95,6 +96,7 @@ export default function POSPage() {
       category: product.category,
       price: product.price,
       cost: product.cost,
+      hpp: product.hpp || product.cost,
       quantity: 1
     })
   }
@@ -128,13 +130,13 @@ export default function POSPage() {
 
       // Create sale items and update stock
       for (const item of cart) {
-        // Create sale item
+        // Create sale item using HPP instead of manual cost
         await supabase.from('sale_items').insert({
           sale_id: sale.id,
           product_id: item.id,
           quantity: item.quantity,
           price: item.price,
-          cost: item.cost,
+          cost: item.hpp || item.cost, // Use HPP if available, fallback to cost
           subtotal: item.price * item.quantity
         })
 

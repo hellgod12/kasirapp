@@ -20,6 +20,7 @@ interface Product {
   category: 'bakery' | 'cemilan' | 'minuman'
   price: number
   cost: number
+  hpp: number
   stock: number
   image_url: string | null
   is_active: boolean
@@ -276,7 +277,8 @@ export default function ProductsPage() {
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Nama</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Kategori</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Harga Jual</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Harga Modal</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">HPP</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Profit/Item</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Stok</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Aksi</th>
                     </tr>
@@ -292,7 +294,10 @@ export default function ProductsPage() {
                           Rp {product.price.toLocaleString('id-ID')}
                         </td>
                         <td className="py-3 px-4 text-gray-600">
-                          Rp {product.cost.toLocaleString('id-ID')}
+                          Rp {product.hpp.toLocaleString('id-ID')}
+                        </td>
+                        <td className="py-3 px-4 text-gray-600">
+                          Rp {(product.price - product.hpp).toLocaleString('id-ID')}
                         </td>
                         <td className="py-3 px-4">
                           <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>

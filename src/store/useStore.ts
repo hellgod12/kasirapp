@@ -7,6 +7,7 @@ interface CartItem {
   category: string
   price: number
   cost: number
+  hpp: number
   quantity: number
 }
 

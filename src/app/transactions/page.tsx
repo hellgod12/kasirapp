@@ -321,7 +321,7 @@ export default function TransactionsPage() {
     
     // Header
     doc.setFontSize(20)
-    doc.text('Kenaya Yummy', 105, 20, { align: 'center' })
+    doc.text('KasirApp', 105, 20, { align: 'center' })
     doc.setFontSize(12)
     doc.text('Nota Transaksi', 105, 30, { align: 'center' })
     

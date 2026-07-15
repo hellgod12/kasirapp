@@ -1,7 +1,7 @@
 {
-  "name": "Kenaya Yummy POS",
-  "short_name": "Kenaya Yummy",
-  "description": "Professional POS and Inventory Management for Kenaya Yummy Bakery",
+  "name": "KasirApp POS",
+  "short_name": "KasirApp",
+  "description": "Professional POS and Inventory Management",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

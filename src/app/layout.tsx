@@ -10,15 +10,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kenaya Yummy - POS & Inventory Management",
-  description: "Professional POS and Inventory Management for Kenaya Yummy Bakery",
+  title: "KasirApp - POS & Inventory Management",
+  description: "Professional POS and Inventory Management",
   manifest: "/manifest.json",
   themeColor: "#f97316",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Kenaya Yummy",
+    title: "KasirApp",
   },
   icons: {
     icon: [

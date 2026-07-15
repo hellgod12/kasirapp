@@ -55,7 +55,7 @@ export default function GeneralSettingsPage() {
       const lowStockSetting = data?.find(s => s.key === 'low_stock_threshold')
       
       setFormData({
-        store_name: storeNameSetting?.value || 'Kenaya Yummy',
+        store_name: storeNameSetting?.value || 'KasirApp',
         low_stock_threshold: lowStockSetting?.value || '10'
       })
     } catch (error) {

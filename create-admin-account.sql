@@ -1,0 +1,42 @@
+-- Create Admin Account for KasirApp
+-- Run this in Supabase SQL Editor to create the initial admin user
+-- 
+-- IMPORTANT: After running this, you will receive an email to confirm the account
+-- Or you can manually set the password in Supabase Dashboard → Authentication → Users
+
+-- Option 1: Create admin user via SQL (requires email confirmation)
+-- Uncomment the line below to create admin@kasirapp.com
+-- SELECT auth.sign_up_email('admin@kasirapp.com', 'demo123', {
+--   'name': 'Admin KasirApp',
+--   'role': 'admin'
+-- });
+
+-- Option 2: Manual creation via Supabase Dashboard (RECOMMENDED)
+-- 1. Go to Supabase Dashboard → Authentication → Users
+-- 2. Click "Add user"
+-- 3. Fill in:
+--    - Email: admin@kasirapp.com
+--    - Password: demo123 (or your preferred password)
+--    - User Metadata (JSON):
+--      {
+--        "name": "Admin KasirApp",
+--        "role": "admin"
+--      }
+-- 4. Click "Create user"
+-- 5. The trigger handle_new_user() will automatically create the profile
+
+-- Option 3: Create profile manually if auth user already exists
+-- Uncomment and modify if you already created the auth user
+-- INSERT INTO profiles (id, email, name, role)
+-- VALUES (
+--   (SELECT id FROM auth.users WHERE email = 'admin@kasirapp.com'),
+--   'admin@kasirapp.com',
+--   'Admin KasirApp',
+--   'admin'
+-- )
+-- ON CONFLICT (id) DO UPDATE SET
+--   role = 'admin',
+--   name = 'Admin KasirApp';
+
+-- Verify the admin account was created
+-- SELECT * FROM profiles WHERE role = 'admin';

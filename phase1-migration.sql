@@ -54,7 +54,7 @@ ON CONFLICT (code) DO NOTHING;
 -- 8. Insert default settings
 INSERT INTO settings (key, value, description) VALUES
 ('low_stock_threshold', '10', 'Minimum stock level to trigger low stock alert'),
-('store_name', 'Kenaya Yummy', 'Store/Brand name for display and reports')
+('store_name', 'KasirApp', 'Store/Brand name for display and reports')
 ON CONFLICT (key) DO NOTHING;
 
 -- 9. Enable Row Level Security

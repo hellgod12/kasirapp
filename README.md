@@ -1,6 +1,6 @@
-# Kenaya Yummy POS & Inventory Management
+# KasirApp - POS & Inventory Management
 
-A professional Point of Sale (POS) and Inventory Management web application for Kenaya Yummy Bakery. Built with Next.js, TypeScript, TailwindCSS, and Supabase.
+A professional Point of Sale (POS) and Inventory Management web application. Built with Next.js, TypeScript, TailwindCSS, and Supabase.
 
 ## Features
 
@@ -38,7 +38,7 @@ A professional Point of Sale (POS) and Inventory Management web application for 
 
 1. Clone the repository and navigate to the project directory:
 ```bash
-cd kenaya-yummy-pos
+cd kasirapp
 ```
 
 2. Install dependencies:
@@ -70,23 +70,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    - Click "Add user" and create the following users:
    
    **Admin User:**
-   - Email: admin@kenayayummy.com
+   - Email: admin@kasirapp.com
    - Password: demo123
    - User Metadata (JSON):
      ```json
      {
-       "name": "Admin Kenaya Yummy",
+       "name": "Admin KasirApp",
        "role": "admin"
      }
      ```
    
    **Kasir User:**
-   - Email: kasir@kenayayummy.com
+   - Email: kasir@kasirapp.com
    - Password: demo123
    - User Metadata (JSON):
      ```json
      {
-       "name": "Kasir Kenaya Yummy",
+       "name": "Kasir KasirApp",
        "role": "kasir"
      }
      ```
@@ -102,13 +102,13 @@ npm run dev
 
 ### Demo Credentials
 
-- **Admin**: admin@kenayayummy.com / demo123
-- **Kasir**: kasir@kenayayummy.com / demo123
+- **Admin**: admin@kasirapp.com / demo123
+- **Kasir**: kasir@kasirapp.com / demo123
 
 ## Project Structure
 
 ```
-kenaya-yummy-pos/
+kasirapp/
 ├── src/
 │   ├── app/
 │   │   ├── dashboard/          # Dashboard page
@@ -149,7 +149,7 @@ kenaya-yummy-pos/
 
 ## Brand Colors
 
-Kenaya Yummy uses a warm, bakery-inspired color palette:
+KasirApp uses a warm, modern color palette:
 - **Primary**: Orange/Red gradient
 - **Background**: Cream/White
 - **Accent**: Light cream/orange tones
@@ -221,4 +221,4 @@ The application supports PWA installation on mobile devices:
 
 ## License
 
-This project is proprietary software for Kenaya Yummy.
+This project is proprietary software for KasirApp.

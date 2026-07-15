@@ -160,7 +160,7 @@ export default function ReportsPage() {
     
     // Title
     doc.setFontSize(20)
-    doc.text('Kenaya Yummy - Laporan', 14, 20)
+    doc.text('KasirApp - Laporan', 14, 20)
     
     doc.setFontSize(12)
     doc.text(`Jenis: ${reportType === 'daily' ? 'Harian' : 'Bulanan'}`, 14, 30)
@@ -217,7 +217,7 @@ export default function ReportsPage() {
       })
     }
 
-    doc.save(`laporan-kenaya-yummy-${selectedDate}.pdf`)
+    doc.save(`laporan-kasirapp-${selectedDate}.pdf`)
   }
 
   const exportExcel = () => {
@@ -261,7 +261,7 @@ export default function ReportsPage() {
       XLSX.utils.book_append_sheet(workbook, productsSheet, 'Produk Terlaris')
     }
 
-    XLSX.writeFile(workbook, `laporan-kenaya-yummy-${selectedDate}.xlsx`)
+    XLSX.writeFile(workbook, `laporan-kasirapp-${selectedDate}.xlsx`)
   }
 
   if (loading || !user) {

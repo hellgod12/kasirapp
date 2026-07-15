@@ -46,9 +46,9 @@ export default function LoginPage() {
               <Cake className="w-8 h-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold text-gray-800">Kenaya Yummy</CardTitle>
+          <CardTitle className="text-3xl font-bold text-gray-800">KasirApp</CardTitle>
           <CardDescription className="text-gray-600">
-            Masuk untuk mengelola toko bakery Anda
+            Masuk untuk mengelola toko Anda
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -472,7 +472,7 @@ export default function POSPage() {
                   <label className="text-sm font-medium text-gray-700">
                     Metode Pembayaran
                   </label>
-                  <Select value={paymentMethod} onValueChange={(value: string) => setPaymentMethod(value)}>
+                  <Select value={paymentMethod} onValueChange={(value: string | null) => setPaymentMethod(value || 'cash')}>
                     <SelectTrigger className="h-11">
                       <SelectValue placeholder="Pilih metode pembayaran" />
                     </SelectTrigger>

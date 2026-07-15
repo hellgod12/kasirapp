@@ -23,7 +23,11 @@ interface RawMaterial {
   created_at: string
 }
 
-const units = ['kg', 'gram', 'liter', 'ml', 'pcs']
+interface Unit {
+  id: string
+  name: string
+  is_active: boolean
+}
 
 export default function RawMaterialsPage() {
   const { user, loading } = useAuth()
@@ -34,7 +38,7 @@ export default function RawMaterialsPage() {
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    unit: 'kg',
+    unit: '',
     cost_per_unit: '',
     stock: ''
   })
@@ -146,7 +150,7 @@ export default function RawMaterialsPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      unit: 'kg',
+      unit: '',
       cost_per_unit: '',
       stock: ''
     })
@@ -197,16 +201,12 @@ export default function RawMaterialsPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Satuan</label>
-                      <Select value={formData.unit || 'kg'} onValueChange={(value) => setFormData({ ...formData, unit: value || 'kg' })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {units.map((unit) => (
-                            <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        value={formData.unit}
+                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                        placeholder="Contoh: kg, gram, liter, ml, pcs, dll"
+                        required
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Harga per Satuan (Rp)</label>

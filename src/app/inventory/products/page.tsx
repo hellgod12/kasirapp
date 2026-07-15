@@ -18,7 +18,7 @@ import { Plus, Edit, Trash2, Package, Search } from 'lucide-react'
 interface Product {
   id: string
   name: string
-  category: 'bakery' | 'cemilan' | 'minuman'
+  category: string
   price: number
   cost: number
   hpp: number
@@ -27,17 +27,24 @@ interface Product {
   is_active: boolean
 }
 
+interface Category {
+  id: string
+  name: string
+  is_active: boolean
+}
+
 export default function ProductsPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    category: 'bakery' as 'bakery' | 'cemilan' | 'minuman',
+    category: '',
     price: '',
     cost: '',
     stock: ''
@@ -52,8 +59,24 @@ export default function ProductsPage() {
   useEffect(() => {
     if (user) {
       fetchProducts()
+      fetchCategories()
     }
   }, [user])
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order')
+      
+      if (error) throw error
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -145,7 +168,7 @@ export default function ProductsPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      category: 'bakery',
+      category: categories.length > 0 ? categories[0].name : '',
       price: '',
       cost: '',
       stock: ''
@@ -204,9 +227,11 @@ export default function ProductsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="bakery">Bakery</SelectItem>
-                        <SelectItem value="cemilan">Cemilan</SelectItem>
-                        <SelectItem value="minuman">Minuman</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -263,9 +288,11 @@ export default function ProductsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua</SelectItem>
-                    <SelectItem value="bakery">Bakery</SelectItem>
-                    <SelectItem value="cemilan">Cemilan</SelectItem>
-                    <SelectItem value="minuman">Minuman</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

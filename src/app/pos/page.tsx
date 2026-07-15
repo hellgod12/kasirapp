@@ -14,14 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { useStore } from '@/store/useStore'
 import { supabase } from '@/lib/supabase'
-import { Plus, Minus, Trash2, ShoppingBag, Cake, Coffee, Cookie } from 'lucide-react'
+import { Plus, Minus, Trash2, ShoppingBag, Cake, Coffee, Cookie, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
 interface Product {
   id: string
   name: string
-  category: 'bakery' | 'cemilan' | 'minuman'
+  category: string
   price: number
   cost: number
   hpp: number
@@ -30,26 +30,37 @@ interface Product {
   is_active: boolean
 }
 
-const categoryIcons = {
-  bakery: Cake,
-  cemilan: Cookie,
-  minuman: Coffee
+interface Category {
+  id: string
+  name: string
+  icon: string
+  color: string
+  is_active: boolean
 }
 
-const categoryColors = {
-  bakery: 'from-orange-500 to-red-500',
-  cemilan: 'from-yellow-500 to-orange-500',
-  minuman: 'from-blue-500 to-indigo-500'
+interface PaymentMethod {
+  id: string
+  name: string
+  code: string
+  is_active: boolean
+}
+
+interface Setting {
+  key: string
+  value: string
 }
 
 export default function POSPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [settings, setSettings] = useState<Setting[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash')
   
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, getCartCount } = useStore()
 
@@ -62,8 +73,77 @@ export default function POSPage() {
   useEffect(() => {
     if (user) {
       fetchProducts()
+      fetchCategories()
+      fetchPaymentMethods()
+      fetchSettings()
     }
   }, [user])
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order')
+      
+      if (error) throw error
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchPaymentMethods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order')
+      
+      if (error) throw error
+      setPaymentMethods(data || [])
+      
+      // Set default payment method to first active method
+      if (data && data.length > 0 && !paymentMethod) {
+        setPaymentMethod(data[0].code)
+      }
+    } catch (error) {
+      console.error('Error fetching payment methods:', error)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+      
+      if (error) throw error
+      setSettings(data || [])
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    }
+  }
+
+  const getSettingValue = (key: string, defaultValue: string = '10'): string => {
+    const setting = settings.find(s => s.key === key)
+    return setting?.value || defaultValue
+  }
+
+  const getLowStockThreshold = (): number => {
+    return parseInt(getSettingValue('low_stock_threshold', '10'))
+  }
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Cake': return Cake
+      case 'Coffee': return Coffee
+      case 'Cookie': return Cookie
+      default: return Package
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -203,17 +283,17 @@ export default function POSPage() {
                 >
                   Semua
                 </Button>
-                {['bakery', 'cemilan', 'minuman'].map((category) => {
-                  const Icon = categoryIcons[category as keyof typeof categoryIcons]
+                {categories.map((category) => {
+                  const Icon = getIconComponent(category.icon)
                   return (
                     <Button
-                      key={category}
-                      variant={selectedCategory === category ? 'default' : 'outline'}
+                      key={category.id}
+                      variant={selectedCategory === category.name ? 'default' : 'outline'}
                       className="w-full justify-start capitalize"
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => setSelectedCategory(category.name)}
                     >
                       <Icon className="w-4 h-4 mr-2" />
-                      {category}
+                      {category.name}
                     </Button>
                   )
                 })}
@@ -232,18 +312,18 @@ export default function POSPage() {
                   >
                     Semua
                   </Button>
-                  {['bakery', 'cemilan', 'minuman'].map((category) => {
-                    const Icon = categoryIcons[category as keyof typeof categoryIcons]
+                  {categories.map((category) => {
+                    const Icon = getIconComponent(category.icon)
                     return (
                       <Button
-                        key={category}
-                        variant={selectedCategory === category ? 'default' : 'outline'}
+                        key={category.id}
+                        variant={selectedCategory === category.name ? 'default' : 'outline'}
                         size="sm"
                         className="capitalize whitespace-nowrap"
-                        onClick={() => setSelectedCategory(category)}
+                        onClick={() => setSelectedCategory(category.name)}
                       >
                         <Icon className="w-4 h-4 mr-1" />
-                        {category}
+                        {category.name}
                       </Button>
                     )
                   })}
@@ -281,14 +361,18 @@ export default function POSPage() {
                   </div>
                 ) : (
                   filteredProducts.map((product) => {
-                    const Icon = categoryIcons[product.category]
+                    const category = categories.find(c => c.name === product.category)
+                    const Icon = category ? getIconComponent(category.icon) : Package
+                    const categoryColor = category?.color || 'from-gray-500 to-gray-600'
+                    const lowStockThreshold = getLowStockThreshold()
+                    
                     return (
                       <Card
                         key={product.id}
                         className="cursor-pointer hover:shadow-lg transition-shadow duration-300 overflow-hidden"
                         onClick={() => handleAddToCart(product)}
                       >
-                        <div className={`h-32 bg-gradient-to-br ${categoryColors[product.category]} flex items-center justify-center`}>
+                        <div className={`h-32 bg-gradient-to-br ${categoryColor} flex items-center justify-center`}>
                           <Icon className="w-16 h-16 text-white opacity-80" />
                         </div>
                         <CardContent className="p-4">
@@ -298,7 +382,7 @@ export default function POSPage() {
                             <span className="font-bold text-orange-600">
                               Rp {product.price.toLocaleString('id-ID')}
                             </span>
-                            <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>
+                            <Badge variant={product.stock < lowStockThreshold ? 'destructive' : 'secondary'}>
                               Stok: {product.stock}
                             </Badge>
                           </div>
@@ -388,13 +472,16 @@ export default function POSPage() {
                   <label className="text-sm font-medium text-gray-700">
                     Metode Pembayaran
                   </label>
-                  <Select value={paymentMethod} onValueChange={(value: 'cash' | 'transfer' | null) => setPaymentMethod(value as 'cash' | 'transfer')}>
+                  <Select value={paymentMethod} onValueChange={(value: string) => setPaymentMethod(value)}>
                     <SelectTrigger className="h-11">
                       <SelectValue placeholder="Pilih metode pembayaran" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Tunai (Cash)</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method.id} value={method.code}>
+                          {method.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

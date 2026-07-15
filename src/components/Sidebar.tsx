@@ -14,7 +14,8 @@ import {
   Wallet,
   Wheat,
   BookOpen,
-  Receipt
+  Receipt,
+  Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Riwayat Stok', href: '/inventory/history', icon: BarChart3, roles: ['admin'] },
   { name: 'Keuangan', href: '/finance/expenses', icon: Wallet, roles: ['admin'] },
   { name: 'Laporan', href: '/reports', icon: BarChart3, roles: ['admin'] },
+  { name: 'Pengaturan', href: '/settings/general', icon: Settings, roles: ['admin'] },
 ]
 
 export function Sidebar() {

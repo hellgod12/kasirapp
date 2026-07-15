@@ -36,6 +36,11 @@ interface DashboardStats {
   bestSellers: any[]
 }
 
+interface Setting {
+  key: string
+  value: string
+}
+
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
@@ -52,6 +57,7 @@ export default function DashboardPage() {
     lowStock: 0,
     bestSellers: []
   })
+  const [settings, setSettings] = useState<Setting[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -62,9 +68,32 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
+      fetchSettings()
       fetchDashboardStats()
     }
   }, [user])
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+      
+      if (error) throw error
+      setSettings(data || [])
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    }
+  }
+
+  const getSettingValue = (key: string, defaultValue: string = '10'): string => {
+    const setting = settings.find(s => s.key === key)
+    return setting?.value || defaultValue
+  }
+
+  const getLowStockThreshold = (): number => {
+    return parseInt(getSettingValue('low_stock_threshold', '10'))
+  }
 
   const fetchDashboardStats = async () => {
     try {
@@ -118,11 +147,12 @@ export default function DashboardPage() {
       const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
       console.log('TODAY QUANTITY SOLD:', todayQuantitySold)
 
-      // Get low stock products (stock < 10)
+      // Get low stock products (stock < configurable threshold)
+      const lowStockThreshold = getLowStockThreshold()
       const { count: lowStockCount } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
-        .lt('stock', 10)
+        .lt('stock', lowStockThreshold)
 
       // Get best sellers (top 5 by quantity sold TODAY)
       const { data: bestSellersRawData } = await supabase

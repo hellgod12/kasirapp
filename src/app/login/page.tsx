@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Cake } from 'lucide-react'
+import { logEnvironment, logBeforeLogin, logSignInWithPassword, logAfterLogin, logProfileLookup } from '@/lib/auth-debug'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -16,17 +17,47 @@ export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
 
+  useEffect(() => {
+    logEnvironment()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
+      logBeforeLogin(email, password)
+      
+      const { data, error: authError } = await logSignInWithPassword(email, password)
+      
+      if (authError) {
+        console.log('[FAIL STEP] auth_request')
+        throw authError
+      }
+      
+      logAfterLogin(data)
+      
+      if (!data?.user?.id) {
+        console.log('[FAIL STEP] session_creation')
+        throw new Error('No user session created')
+      }
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      
+      const { profile, error: profileError } = await logProfileLookup(data.user.id, supabaseUrl, supabaseAnonKey)
+      
+      if (profileError) {
+        console.log('[FAIL STEP] profile_lookup')
+        throw profileError
+      }
+      
       await login(email, password)
+      console.log('[SUCCESS] redirect')
       router.push('/dashboard')
     } catch (err) {
-      console.error('LOGIN PAGE ERROR:', err)
-      // Show actual error from Supabase instead of generic message
+      console.error('[ERROR]', err)
       if (err instanceof Error) {
         setError(`Login gagal: ${err.message}`)
       } else {

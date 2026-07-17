@@ -148,9 +148,10 @@ export default function CustomersPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus pelanggan ini?')) return
     
     try {
+      // Soft delete: set is_active to false
       const { error } = await supabase
         .from('customers')
-        .delete()
+        .update({ is_active: false })
         .eq('id', id)
       
       if (error) throw error

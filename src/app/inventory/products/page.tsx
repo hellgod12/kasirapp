@@ -144,6 +144,21 @@ export default function ProductsPage() {
       alert('Stok tidak boleh negatif')
       return
     }
+
+    // Check for duplicate barcode if provided
+    if (formData.barcode && formData.barcode.trim()) {
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('barcode', formData.barcode.trim())
+        .neq('id', editingProduct?.id || '')
+        .single()
+
+      if (existingProduct) {
+        alert('Barcode ini sudah digunakan oleh produk lain')
+        return
+      }
+    }
     
     try {
       const productData = {
@@ -152,7 +167,7 @@ export default function ProductsPage() {
         price,
         cost,
         stock,
-        barcode: formData.barcode || null
+        barcode: formData.barcode?.trim() || null
       }
 
       if (editingProduct) {
@@ -175,7 +190,12 @@ export default function ProductsPage() {
       fetchProducts()
     } catch (error) {
       console.error('Error saving product:', error)
-      alert('Terjadi kesalahan saat menyimpan produk')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('duplicate key') || errorMessage.includes('unique')) {
+        alert('Barcode ini sudah digunakan')
+      } else {
+        alert('Terjadi kesalahan saat menyimpan produk')
+      }
     }
   }
 

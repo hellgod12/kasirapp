@@ -70,47 +70,28 @@ export default function StockInPage() {
     }
 
     try {
-      
-      // Fetch current stock from database to avoid stale data
-      const { data: currentProduct } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', selectedProduct)
-        .single()
+      // Use atomic RPC function to prevent race conditions
+      const { data, error } = await supabase.rpc('add_stock_atomic', {
+        p_product_id: selectedProduct,
+        p_quantity: qty,
+        p_notes: notes || null,
+        p_user_id: user!.id
+      })
 
-      if (!currentProduct) {
-        alert('Produk tidak ditemukan')
-        return
+      if (error) throw error
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Failed to add stock')
       }
 
-      // Update product stock using current database value
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ stock: currentProduct.stock + qty })
-        .eq('id', selectedProduct)
-      
-      if (updateError) throw updateError
-
-      // Create stock movement
-      const { error: movementError } = await supabase
-        .from('stock_movements')
-        .insert({
-          product_id: selectedProduct,
-          type: 'in',
-          quantity: qty,
-          notes: notes || null,
-          created_by: user!.id
-        })
-      
-      if (movementError) throw movementError
-
-      alert('Stok berhasil ditambahkan!')
+      alert(`Stok berhasil ditambahkan! Stok baru: ${data.new_stock}`)
       setSelectedProduct('')
       setQuantity('')
       setNotes('')
       fetchProducts()
     } catch (error) {
-      alert('Terjadi kesalahan saat menambah stok')
+      console.error('Stock update error:', error)
+      alert(`Terjadi kesalahan saat menambah stok: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

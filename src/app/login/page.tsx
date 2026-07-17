@@ -43,10 +43,7 @@ export default function LoginPage() {
         throw new Error('No user session created')
       }
       
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      
-      const { profile, error: profileError } = await logProfileLookup(data.user.id, supabaseUrl, supabaseAnonKey)
+      const { profile, error: profileError } = await logProfileLookup(data.user.id)
       
       if (profileError) {
         console.log('[FAIL STEP] profile_lookup')

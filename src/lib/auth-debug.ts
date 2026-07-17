@@ -1,6 +1,6 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from './supabase'
 
 const EXPECTED_URL = 'https://ectswacabwnpdvhwqasc.supabase.co'
 
@@ -23,14 +23,11 @@ export function logBeforeLogin(email: string, password: string) {
 
 export async function logSignInWithPassword(email: string, password: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   console.log('[AUTH REQUEST] Target URL:', supabaseUrl)
   console.log('[AUTH REQUEST] Calling signInWithPassword...')
-
-  const client = createClient(supabaseUrl!, supabaseAnonKey!)
   
-  const { data, error } = await client.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   console.log('[AUTH RESPONSE] Data:', data)
   console.log('[AUTH RESPONSE] Error:', error)
@@ -50,12 +47,10 @@ export function logAfterLogin(data: any) {
   console.log('[AFTER LOGIN] Access Token Exists:', !!data.session?.access_token)
 }
 
-export async function logProfileLookup(userId: string, supabaseUrl: string, supabaseAnonKey: string) {
+export async function logProfileLookup(userId: string) {
   console.log('[PROFILE LOOKUP] Querying profiles for user ID:', userId)
   
-  const client = createClient(supabaseUrl, supabaseAnonKey)
-  
-  const { data: profile, error } = await client
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)

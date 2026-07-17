@@ -85,7 +85,8 @@ export default function CategoriesPage() {
       if (error) throw error
       setCategories(data || [])
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      // Error will be handled by error boundary
+      throw error
     }
   }
 
@@ -118,7 +119,6 @@ export default function CategoriesPage() {
       resetForm()
       fetchCategories()
     } catch (error) {
-      console.error('Error saving category:', error)
       alert('Terjadi kesalahan saat menyimpan kategori')
     }
   }
@@ -146,7 +146,6 @@ export default function CategoriesPage() {
       if (error) throw error
       fetchCategories()
     } catch (error) {
-      console.error('Error deleting category:', error)
       alert('Terjadi kesalahan saat menghapus kategori')
     }
   }

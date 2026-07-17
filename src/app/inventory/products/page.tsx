@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit, Trash2, Package, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, Search, FileSpreadsheet } from 'lucide-react'
 
 interface Product {
   id: string
@@ -33,11 +33,17 @@ interface Category {
   is_active: boolean
 }
 
+interface Setting {
+  key: string
+  value: string
+}
+
 export default function ProductsPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [settings, setSettings] = useState<Setting[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -47,7 +53,8 @@ export default function ProductsPage() {
     category: '',
     price: '',
     cost: '',
-    stock: ''
+    stock: '',
+    barcode: ''
   })
 
   useEffect(() => {
@@ -60,8 +67,31 @@ export default function ProductsPage() {
     if (user) {
       fetchProducts()
       fetchCategories()
+      fetchSettings()
     }
   }, [user])
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+      
+      if (error) throw error
+      setSettings(data || [])
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    }
+  }
+
+  const getSettingValue = (key: string, defaultValue: string = '10'): string => {
+    const setting = settings.find(s => s.key === key)
+    return setting?.value || defaultValue
+  }
+
+  const getLowStockThreshold = (): number => {
+    return parseInt(getSettingValue('low_stock_threshold', '10'))
+  }
 
   const fetchCategories = async () => {
     try {
@@ -89,19 +119,40 @@ export default function ProductsPage() {
       if (error) throw error
       setProducts(data || [])
     } catch (error) {
-      console.error('Error fetching products:', error)
+      // Error will be handled by error boundary
+      throw error
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate data
+    const price = parseFloat(formData.price)
+    const cost = parseFloat(formData.cost)
+    const stock = parseInt(formData.stock)
+    
+    if (price <= 0) {
+      alert('Harga jual harus lebih dari 0')
+      return
+    }
+    if (cost < 0) {
+      alert('Harga modal tidak boleh negatif')
+      return
+    }
+    if (stock < 0) {
+      alert('Stok tidak boleh negatif')
+      return
+    }
+    
     try {
       const productData = {
         name: formData.name,
         category: formData.category,
-        price: parseFloat(formData.price),
-        cost: parseFloat(formData.cost),
-        stock: parseInt(formData.stock)
+        price,
+        cost,
+        stock,
+        barcode: formData.barcode || null
       }
 
       if (editingProduct) {
@@ -135,7 +186,8 @@ export default function ProductsPage() {
       category: product.category,
       price: product.price.toString(),
       cost: product.cost.toString(),
-      stock: product.stock.toString()
+      stock: product.stock.toString(),
+      barcode: (product as any).barcode || ''
     })
     setIsDialogOpen(true)
   }
@@ -144,8 +196,6 @@ export default function ProductsPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini? Produk akan disembunyikan dari POS dan daftar produk, tetapi data penjualan historis akan tetap tersimpan.')) return
     
     try {
-      console.log('SOFT DELETE PRODUCT ID:', id)
-      
       // Soft delete: set is_active to false instead of hard delete
       const { error } = await supabase
         .from('products')
@@ -153,14 +203,11 @@ export default function ProductsPage() {
         .eq('id', id)
       
       if (error) {
-        console.error('SOFT DELETE ERROR:', error)
         throw error
       }
       
-      console.log('SOFT DELETE SUCCESS')
       fetchProducts()
     } catch (error) {
-      console.error('Error deleting product:', error)
       alert(`Terjadi kesalahan saat menghapus produk: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -171,7 +218,8 @@ export default function ProductsPage() {
       category: categories.length > 0 ? categories[0].name : '',
       price: '',
       cost: '',
-      stock: ''
+      stock: '',
+      barcode: ''
     })
     setEditingProduct(null)
   }
@@ -197,16 +245,25 @@ export default function ProductsPage() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Produk</h1>
               <p className="text-gray-600 mt-1 text-sm md:text-base">Kelola daftar produk toko</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open)
-              if (!open) resetForm()
-            }}>
-              <DialogTrigger>
-                <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Produk
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="bg-white border-gray-300 hover:bg-gray-50"
+                onClick={() => router.push('/inventory/products-import')}
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Import/Export
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open)
+                if (!open) resetForm()
+              }}>
+                <DialogTrigger>
+                  <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Produk
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-md w-full md:w-auto">
                 <DialogHeader>
                   <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
@@ -262,12 +319,21 @@ export default function ProductsPage() {
                       required
                     />
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Barcode (Opsional)</label>
+                    <Input
+                      value={formData.barcode}
+                      onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                      placeholder="Scan atau masukkan barcode"
+                    />
+                  </div>
                   <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500">
                     {editingProduct ? 'Update' : 'Simpan'}
                   </Button>
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <Card className="shadow-lg">
@@ -323,7 +389,7 @@ export default function ProductsPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Stok</span>
-                        <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>{product.stock}</Badge>
+                        <Badge variant={product.stock < getLowStockThreshold() ? 'destructive' : 'secondary'}>{product.stock}</Badge>
                       </div>
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -380,7 +446,7 @@ export default function ProductsPage() {
                           Rp {(product.price - product.hpp).toLocaleString('id-ID')}
                         </td>
                         <td className="py-3 px-4">
-                          <Badge variant={product.stock < 10 ? 'destructive' : 'secondary'}>
+                          <Badge variant={product.stock < getLowStockThreshold() ? 'destructive' : 'secondary'}>
                             {product.stock}
                           </Badge>
                         </td>

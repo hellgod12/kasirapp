@@ -28,6 +28,7 @@ interface Product {
   stock: number
   image_url: string | null
   is_active: boolean
+  barcode: string | null
 }
 
 interface Category {
@@ -59,8 +60,15 @@ export default function POSPage() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [barcodeInput, setBarcodeInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null)
+  const [selectedDiscount, setSelectedDiscount] = useState<string | null>(null)
+  const [customers, setCustomers] = useState<any[]>([])
+  const [activeDiscounts, setActiveDiscounts] = useState<any[]>([])
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isCheckoutDisabled, setIsCheckoutDisabled] = useState(false)
   
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, getCartCount } = useStore()
 
@@ -76,8 +84,27 @@ export default function POSPage() {
       fetchCategories()
       fetchPaymentMethods()
       fetchSettings()
+      fetchCustomers()
+      fetchActiveDiscounts()
     }
   }, [user])
+
+  // Refresh protection - warn user before leaving if cart has items
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (cart.length > 0 || isProcessing) {
+        e.preventDefault()
+        e.returnValue = '' // Chrome requires returnValue to be set
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [cart.length, isProcessing])
 
   const fetchCategories = async () => {
     try {
@@ -124,6 +151,36 @@ export default function POSPage() {
       setSettings(data || [])
     } catch (error) {
       console.error('Error fetching settings:', error)
+    }
+  }
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+      
+      if (error) throw error
+      setCustomers(data || [])
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+    }
+  }
+
+  const fetchActiveDiscounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+      
+      if (error) throw error
+      setActiveDiscounts(data || [])
+    } catch (error) {
+      console.error('Error fetching discounts:', error)
     }
   }
 
@@ -185,74 +242,71 @@ export default function POSPage() {
     })
   }
 
+  const handleBarcodeInput = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && barcodeInput.trim()) {
+      const barcode = barcodeInput.trim()
+      const product = products.find(p => p.barcode === barcode)
+      
+      if (product) {
+        handleAddToCart(product)
+        setBarcodeInput('')
+      } else {
+        alert('Produk tidak ditemukan dengan barcode ini')
+      }
+    }
+  }
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       alert('Keranjang kosong!')
       return
     }
 
+    if (isCheckoutDisabled) {
+      alert('Transaksi sedang diproses. Mohon tunggu.')
+      return
+    }
+
     setIsProcessing(true)
+    setIsCheckoutDisabled(true)
     try {
-      const totalAmount = getCartTotal()
-      const totalCost = cart.reduce((sum, item) => sum + ((item.hpp || item.cost) * item.quantity), 0)
-      const profit = totalAmount - totalCost
+      // Generate unique transaction token for duplicate prevention
+      const transactionToken = `${user!.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      // Prepare items array for RPC function
+      const items = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        cost: item.hpp || item.cost
+      }))
 
-      console.log('CHECKOUT CALCULATIONS:')
-      console.log('totalAmount:', totalAmount)
-      console.log('totalCost:', totalCost)
-      console.log('profit:', profit)
+      // Call atomic checkout RPC function
+      const { data, error } = await supabase.rpc('process_checkout', {
+        p_items: items,
+        p_payment_method: paymentMethod,
+        p_user_id: user!.id,
+        p_transaction_token: transactionToken,
+        p_customer_id: selectedCustomer,
+        p_discount_id: selectedDiscount
+      })
 
-      // Create sale
-      const { data: sale, error: saleError } = await supabase
-        .from('sales')
-        .insert({
-          total_amount: totalAmount,
-          total_cost: totalCost,
-          profit: profit,
-          payment_method: paymentMethod,
-          created_by: user!.id
-        })
-        .select()
-        .single()
+      if (error) throw error
 
-      if (saleError) throw saleError
-
-      // Create sale items and update stock
-      for (const item of cart) {
-        // Create sale item using HPP instead of manual cost
-        await supabase.from('sale_items').insert({
-          sale_id: sale.id,
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          cost: item.hpp || item.cost, // Use HPP if available, fallback to cost
-          subtotal: item.price * item.quantity
-        })
-
-        // Update product stock
-        await supabase
-          .from('products')
-          .update({ stock: products.find(p => p.id === item.id)!.stock - item.quantity })
-          .eq('id', item.id)
-
-        // Create stock movement
-        await supabase.from('stock_movements').insert({
-          product_id: item.id,
-          type: 'out',
-          quantity: item.quantity,
-          reference_id: sale.id,
-          created_by: user!.id
-        })
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Checkout failed')
       }
 
       clearCart()
+      setSelectedCustomer(null)
+      setSelectedDiscount(null)
       alert('Transaksi berhasil!')
       fetchProducts()
     } catch (error) {
-      console.error('Error processing sale:', error)
-      alert('Terjadi kesalahan saat memproses transaksi')
+      alert(`Terjadi kesalahan saat memproses transaksi: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsProcessing(false)
+      setIsCheckoutDisabled(false)
     }
   }
 
@@ -330,13 +384,21 @@ export default function POSPage() {
                 </div>
               </div>
 
-              <div className="mb-4 md:mb-6">
+              <div className="mb-4 md:mb-6 space-y-2">
                 <input
                   type="text"
                   placeholder="Cari produk..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Scan barcode (tekan Enter)..."
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyDown={handleBarcodeInput}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-orange-50"
                 />
               </div>
               
@@ -467,6 +529,42 @@ export default function POSPage() {
                       Rp {getCartTotal().toLocaleString('id-ID')}
                     </span>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Pelanggan (Opsional)
+                  </label>
+                  <Select value={selectedCustomer || ''} onValueChange={(value: string | null) => setSelectedCustomer(value)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Pilih pelanggan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tanpa Pelanggan</SelectItem>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Diskon (Opsional)
+                  </label>
+                  <Select value={selectedDiscount || ''} onValueChange={(value: string | null) => setSelectedDiscount(value)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Pilih diskon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tanpa Diskon</SelectItem>
+                      {activeDiscounts.map((discount) => (
+                        <SelectItem key={discount.id} value={discount.id}>
+                          {discount.name} ({discount.type === 'percentage' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">

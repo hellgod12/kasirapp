@@ -62,13 +62,31 @@ export default function StockInPage() {
       return
     }
 
+    // Validate data
+    const qty = parseInt(quantity)
+    if (qty <= 0) {
+      alert('Jumlah harus lebih dari 0')
+      return
+    }
+
     try {
-      const qty = parseInt(quantity)
       
-      // Update product stock
+      // Fetch current stock from database to avoid stale data
+      const { data: currentProduct } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', selectedProduct)
+        .single()
+
+      if (!currentProduct) {
+        alert('Produk tidak ditemukan')
+        return
+      }
+
+      // Update product stock using current database value
       const { error: updateError } = await supabase
         .from('products')
-        .update({ stock: products.find(p => p.id === selectedProduct)!.stock + qty })
+        .update({ stock: currentProduct.stock + qty })
         .eq('id', selectedProduct)
       
       if (updateError) throw updateError
@@ -92,7 +110,6 @@ export default function StockInPage() {
       setNotes('')
       fetchProducts()
     } catch (error) {
-      console.error('Error adding stock:', error)
       alert('Terjadi kesalahan saat menambah stok')
     }
   }

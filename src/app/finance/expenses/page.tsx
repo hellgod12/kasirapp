@@ -79,18 +79,27 @@ export default function ExpensesPage() {
       if (error) throw error
       setExpenses(data || [])
     } catch (error) {
-      console.error('Error fetching expenses:', error)
+      // Error will be handled by error boundary
+      throw error
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate data
+    const amount = parseFloat(formData.amount)
+    if (amount <= 0) {
+      alert('Jumlah harus lebih dari 0')
+      return
+    }
+    
     try {
       const expenseData = {
         expense_date: formData.expense_date,
         category: formData.category,
         description: formData.description,
-        amount: parseFloat(formData.amount),
+        amount,
         created_by: user!.id
       }
 
@@ -113,7 +122,6 @@ export default function ExpensesPage() {
       resetForm()
       fetchExpenses()
     } catch (error) {
-      console.error('Error saving expense:', error)
       alert('Terjadi kesalahan saat menyimpan pengeluaran')
     }
   }
@@ -141,7 +149,6 @@ export default function ExpensesPage() {
       if (error) throw error
       fetchExpenses()
     } catch (error) {
-      console.error('Error deleting expense:', error)
       alert('Terjadi kesalahan saat menghapus pengeluaran')
     }
   }

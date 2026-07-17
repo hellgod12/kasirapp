@@ -97,55 +97,40 @@ export default function DashboardPage() {
 
   const fetchDashboardStats = async () => {
     try {
-      // Use UTC date to match Supabase's timezone
+      // Use local timezone for Indonesian users (UTC+7)
       const now = new Date()
-      const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-      const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString()
       
-      const todayStart = todayUTC.toISOString()
-      const todayEnd = tomorrowUTC.toISOString()
-
-      console.log('DASHBOARD DATE RANGE:', { todayStart, todayEnd })
-
       // Get today's sale items for accurate profit calculation
       const { data: saleItemsData } = await supabase
         .from('sale_items')
         .select('subtotal, cost, quantity')
         .gte('created_at', todayStart)
-        .lt('created_at', todayEnd)
-
-      console.log('TODAY SALE ITEMS DATA:', saleItemsData)
+        .lt('created_at', tomorrowStart)
 
       // Calculate revenue from sale_items (sum of subtotals)
       const todayRevenue = saleItemsData?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
-      console.log('TODAY REVENUE (from sale_items subtotal):', todayRevenue)
 
       // Calculate cost from sale_items (sum of cost * quantity)
       const todayCost = saleItemsData?.reduce((sum, item) => sum + (Number(item.cost) * Number(item.quantity)), 0) || 0
-      console.log('TODAY COST (from sale_items cost * quantity):', todayCost)
 
       // Calculate profit (revenue - cost)
       const todayProfit = todayRevenue - todayCost
-      console.log('TODAY PROFIT (revenue - cost):', todayProfit)
 
       // Calculate cash and transfer sales from sales table
       const { data: salesData } = await supabase
         .from('sales')
         .select('total_amount, payment_method')
         .gte('created_at', todayStart)
-        .lt('created_at', todayEnd)
+        .lt('created_at', tomorrowStart)
 
       const todayCashSales = salesData?.filter(sale => sale.payment_method === 'cash').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
       const todayTransferSales = salesData?.filter(sale => sale.payment_method === 'transfer').reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0
       const todayTransactionCount = salesData?.length || 0
 
-      console.log('TODAY CASH SALES:', todayCashSales)
-      console.log('TODAY TRANSFER SALES:', todayTransferSales)
-      console.log('TODAY TRANSACTION COUNT:', todayTransactionCount)
-
       // Get today's total quantity sold (sum of all sale_items quantities)
       const todayQuantitySold = saleItemsData?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0
-      console.log('TODAY QUANTITY SOLD:', todayQuantitySold)
 
       // Get low stock products (stock < configurable threshold)
       const lowStockThreshold = getLowStockThreshold()
@@ -159,7 +144,7 @@ export default function DashboardPage() {
         .from('sale_items')
         .select('product_id, quantity, products!inner(name)')
         .gte('created_at', todayStart)
-        .lt('created_at', todayEnd)
+        .lt('created_at', tomorrowStart)
 
       // Aggregate by product_id and sum quantities
       const productAggregates = new Map<string, { quantity: number, name: string }>()
@@ -182,20 +167,15 @@ export default function DashboardPage() {
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 5)
 
-      console.log('TODAY BEST SELLERS:', bestSellersData)
-
       // Get today's expenses
       const { data: expensesData } = await supabase
         .from('expenses')
         .select('amount')
-        .gte('expense_date', todayUTC.toISOString().split('T')[0])
-        .lte('expense_date', tomorrowUTC.toISOString().split('T')[0])
+        .gte('expense_date', todayStart.split('T')[0])
+        .lte('expense_date', tomorrowStart.split('T')[0])
 
       const todayExpenses = expensesData?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0
       const todayNetProfit = todayProfit - todayExpenses
-
-      console.log('TODAY EXPENSES:', todayExpenses)
-      console.log('TODAY NET PROFIT:', todayNetProfit)
 
       setStats({
         todayRevenue,
@@ -211,7 +191,8 @@ export default function DashboardPage() {
         bestSellers: bestSellersData || []
       })
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error)
+      // Error will be handled by error boundary
+      throw error
     } finally {
       setIsLoading(false)
     }

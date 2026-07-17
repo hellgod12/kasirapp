@@ -15,7 +15,11 @@ import {
   Wheat,
   BookOpen,
   Receipt,
-  Settings
+  Settings,
+  Users,
+  Truck,
+  Percent,
+  Database
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +27,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
   { name: 'Kasir (POS)', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
   { name: 'Riwayat Transaksi', href: '/transactions', icon: Receipt, roles: ['admin', 'kasir'] },
+  { name: 'Pelanggan', href: '/customers', icon: Users, roles: ['admin', 'kasir'] },
   { name: 'Produk', href: '/inventory/products', icon: Package, roles: ['admin'] },
   { name: 'Bahan Baku', href: '/inventory/raw-materials', icon: Wheat, roles: ['admin'] },
   { name: 'Resep Produk', href: '/inventory/recipes', icon: BookOpen, roles: ['admin'] },
@@ -30,9 +35,12 @@ const navigation = [
   { name: 'Produksi Harian', href: '/inventory/production', icon: Cake, roles: ['admin'] },
   { name: 'Barang Rusak', href: '/inventory/waste', icon: Package, roles: ['admin'] },
   { name: 'Riwayat Stok', href: '/inventory/history', icon: BarChart3, roles: ['admin'] },
+  { name: 'Supplier', href: '/suppliers', icon: Truck, roles: ['admin'] },
   { name: 'Keuangan', href: '/finance/expenses', icon: Wallet, roles: ['admin'] },
   { name: 'Laporan', href: '/reports', icon: BarChart3, roles: ['admin'] },
   { name: 'Pengaturan', href: '/settings/general', icon: Settings, roles: ['admin'] },
+  { name: 'Diskon', href: '/settings/discounts', icon: Percent, roles: ['admin'] },
+  { name: 'Backup', href: '/settings/backup', icon: Database, roles: ['admin'] },
 ]
 
 export function Sidebar() {

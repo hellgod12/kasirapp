@@ -143,9 +143,6 @@ export default function RecipesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('SAVE RECIPE START')
-    console.log('selectedProductId:', selectedProductId)
-    console.log('ingredients:', ingredients)
     
     if (!selectedProductId) {
       alert('Pilih produk terlebih dahulu')
@@ -155,7 +152,6 @@ export default function RecipesPage() {
     try {
       // Validate ingredients
       const validIngredients = ingredients.filter(ing => ing.raw_material_id && ing.quantity_used)
-      console.log('validIngredients:', validIngredients)
       
       if (validIngredients.length === 0) {
         alert('Tambahkan minimal satu bahan baku')
@@ -163,12 +159,10 @@ export default function RecipesPage() {
       }
 
       // Delete existing recipes for this product
-      console.log('Deleting existing recipes for product:', selectedProductId)
-      const deleteResult = await supabase
+      await supabase
         .from('product_recipes')
         .delete()
         .eq('product_id', selectedProductId)
-      console.log('Delete result:', deleteResult)
 
       // Insert all new recipes
       const recipesToInsert = validIngredients.map(ing => ({
@@ -176,44 +170,31 @@ export default function RecipesPage() {
         raw_material_id: ing.raw_material_id,
         quantity_used: parseFloat(ing.quantity_used)
       }))
-      
-      console.log('recipesToInsert:', recipesToInsert)
 
       const { error } = await supabase
         .from('product_recipes')
         .insert(recipesToInsert)
 
-      console.log('Insert error:', error)
       if (error) throw error
 
       // Update product HPP
-      console.log('Calling updateProductHPP for product:', selectedProductId)
       await updateProductHPP(selectedProductId)
 
       setIsDialogOpen(false)
       resetForm()
       fetchProductsWithRecipes()
-      console.log('SAVE RECIPE SUCCESS')
     } catch (error) {
-      console.error('Error saving recipe:', error)
-      console.error('ERROR DETAILS:', JSON.stringify(error, null, 2))
       alert('Terjadi kesalahan saat menyimpan resep')
     }
   }
 
   const updateProductHPP = async (productId: string) => {
     try {
-      console.log('UPDATE PRODUCT HPP START')
-      console.log('productId:', productId)
-      
       // Calculate HPP directly from recipes
       const { data: recipes, error: recipesError } = await supabase
         .from('product_recipes')
         .select('quantity_used, raw_materials(cost_per_unit)')
         .eq('product_id', productId)
-      
-      console.log('recipes data:', recipes)
-      console.log('recipes error:', recipesError)
       
       if (recipesError) throw recipesError
 
@@ -222,31 +203,24 @@ export default function RecipesPage() {
       if (recipes) {
         totalHPP = recipes.reduce((sum, recipe) => {
           const materials = recipe.raw_materials as any
-          console.log('recipe:', recipe, 'materials:', materials, 'type:', typeof materials, 'isArray:', Array.isArray(materials))
           
           let costPerUnit = 0
           
           // Handle both array and object cases
           if (Array.isArray(materials) && materials.length > 0) {
             costPerUnit = materials[0].cost_per_unit
-            console.log('Array case - cost_per_unit:', costPerUnit)
           } else if (materials && !Array.isArray(materials) && materials.cost_per_unit) {
             costPerUnit = materials.cost_per_unit
-            console.log('Object case - cost_per_unit:', costPerUnit)
           }
           
           if (costPerUnit > 0) {
             const cost = recipe.quantity_used * costPerUnit
-            console.log('quantity_used:', recipe.quantity_used, 'cost_per_unit:', costPerUnit, 'cost:', cost)
             return sum + cost
           }
           
-          console.log('No valid cost_per_unit found, skipping this recipe')
           return sum
         }, 0)
       }
-      
-      console.log('totalHPP calculated:', totalHPP)
 
       // Update product HPP
       const updateResult = await supabase
@@ -255,17 +229,12 @@ export default function RecipesPage() {
         .eq('id', productId)
         .select()
 
-      console.log('updateResult:', updateResult)
-
       if (updateResult.error) {
-        console.error('UPDATE ERROR:', updateResult.error)
         throw updateResult.error
       }
-      
-      console.log('UPDATE PRODUCT HPP SUCCESS')
     } catch (error) {
-      console.error('Error updating product HPP:', error)
-      console.error('ERROR DETAILS:', JSON.stringify(error, null, 2))
+      // Error will be handled by calling function
+      throw error
     }
   }
 

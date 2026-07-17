@@ -109,7 +109,7 @@ export default function TransactionsPage() {
 
       let query = supabase
         .from('sales')
-        .select('*')
+        .select('*, profiles(name, role)')
         .order('created_at', { ascending: false })
 
       if (dateFilter !== 'all' && startDate && endDate) {
@@ -122,38 +122,12 @@ export default function TransactionsPage() {
 
       const { data, error } = await query
 
-      console.log('SALES DATA:', data)
-      console.log('SALES ERROR:', error)
-
       if (error) throw error
 
-      // Fetch profiles separately to avoid join issues
-      const salesWithProfiles = await Promise.all(
-        (data || []).map(async (sale) => {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('name, role')
-              .eq('id', sale.created_by)
-              .single()
-            
-            return {
-              ...sale,
-              profiles: profile || undefined
-            }
-          } catch (profileError) {
-            console.error('Error fetching profile for sale:', sale.id, profileError)
-            return {
-              ...sale,
-              profiles: undefined
-            }
-          }
-        })
-      )
-
-      setSales(salesWithProfiles)
+      setSales(data || [])
     } catch (error) {
-      console.error('Error fetching sales:', error)
+      // Error will be handled by error boundary
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -169,7 +143,8 @@ export default function TransactionsPage() {
       if (error) throw error
       setSaleItems(data || [])
     } catch (error) {
-      console.error('Error fetching sale items:', error)
+      // Error will be handled by error boundary
+      throw error
     }
   }
 
@@ -218,7 +193,7 @@ export default function TransactionsPage() {
       setVoidReason('')
       setSelectedSale(null)
     } catch (error) {
-      console.error('Error voiding transaction:', error)
+      alert('Terjadi kesalahan saat void transaksi')
     }
   }
 
@@ -310,7 +285,7 @@ export default function TransactionsPage() {
       setIsDetailOpen(false)
       setSelectedSale(null)
     } catch (error) {
-      console.error('Error editing transaction:', error)
+      alert('Terjadi kesalahan saat edit transaksi')
     }
   }
 

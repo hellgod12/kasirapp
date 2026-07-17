@@ -57,16 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
-    console.log('USER ID:', supabaseUser.id)
-    
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', supabaseUser.id)
       .single()
-
-    console.log('PROFILE:', profile)
-    console.log('PROFILE ERROR:', error)
 
     if (error) throw error
 
@@ -81,15 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = async (email: string, password: string) => {
-    console.log('EMAIL:', email)
-    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
-
-    console.log('SIGNIN DATA:', data)
-    console.log('SIGNIN ERROR:', error)
 
     if (error) throw error
 

@@ -1,12 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-console.log('SUPABASE URL:', supabaseUrl)
-console.log('SUPABASE ANON EXISTS:', !!supabaseAnonKey)
+// Create client lazily - only when actually used
+let _supabase: SupabaseClient | null = null
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!_supabase) {
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase environment variables are not configured')
+      }
+      _supabase = createClient(supabaseUrl, supabaseAnonKey)
+    }
+    return _supabase[prop as keyof SupabaseClient]
+  }
+})
 
 export type Database = {
   public: {
@@ -39,33 +49,39 @@ export type Database = {
         Row: {
           id: string
           name: string
-          category: 'bakery' | 'cemilan' | 'minuman'
+          category: string
           price: number
           cost: number
+          hpp: number
           stock: number
           image_url: string | null
+          is_active: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           name: string
-          category: 'bakery' | 'cemilan' | 'minuman'
+          category: string
           price: number
           cost: number
+          hpp?: number
           stock?: number
           image_url?: string | null
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           name?: string
-          category?: 'bakery' | 'cemilan' | 'minuman'
+          category?: string
           price?: number
           cost?: number
+          hpp?: number
           stock?: number
           image_url?: string | null
+          is_active?: boolean
           updated_at?: string
         }
       }

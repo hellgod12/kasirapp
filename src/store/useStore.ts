@@ -70,7 +70,7 @@ export const useStore = create<StoreState>()(
       
       getCartProfit: () => {
         return get().cart.reduce((total, item) => {
-          return total + (item.price - item.cost) * item.quantity
+          return total + (item.price - (item.hpp || item.cost)) * item.quantity
         }, 0)
       },
       
@@ -79,7 +79,7 @@ export const useStore = create<StoreState>()(
       },
     }),
     {
-      name: 'kenaya-cart-storage',
+      name: 'kasirapp-cart-storage',
     }
   )
 )
